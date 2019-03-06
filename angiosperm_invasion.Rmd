@@ -12,7 +12,7 @@ output:
 urlcolor: blue
 ---
 
-<!-- knit with Rscript -e "rmarkdown::render('output_file.Rmd')" -->
+<!-- knit with Rscript -e "rmarkdown::render('angiosperm_invasion.Rmd')" -->
 
 ## Questions
 
@@ -244,7 +244,7 @@ if (!file.exists("./fit_rare_2k.rds")) {
   fit_rare <- brm(rare | trials(species) ~ forms2 + annual + perennial + woody + succulent + climate.sum + ghybrids + shybrids + log10(age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + animal + (1 | family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95))
+    control=list(adapt_delta=0.95,max_treedepth=12))
 
   saveRDS(fit_rare, "./fit_rare_2k.rds")
 
@@ -262,6 +262,12 @@ stanplot(fit_rare, pars=rownames(to_print), type="intervals",
                     prob=0.8, prob_outer=0.95, point_est="mean")
 
 bayes_R2(fit_rare)
+
+
+# Diagnosing Divergent Transitions
+posterior_rare <- as.array(fit_rare)
+np_rare <- nuts_params(fit_rare)
+mcmc_pairs(posterior_rare, np = np_rare, pars=rownames(to_print))
 
 ##Posterior predictive checks
 # first make posterior predictions
