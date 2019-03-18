@@ -78,6 +78,11 @@ require(knitr)
 data <- read.csv("./sp.rare.inv.csv", as.is=F)
 # data %>% purrr::keep(is.numeric) %>% cor(., use="complete.obs") %>% View()
 
+# one family has more rare species than species
+data[data$rare>data$species,]
+
+# increasing species by 1 to match
+data$species[data$family=="Metteniusaceae"] <- 8
 
 ### Zanne tree & generating tree representing families
 tree <- read.tree("./Vascular_Plants_rooted.dated.tre")
