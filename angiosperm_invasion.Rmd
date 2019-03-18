@@ -189,7 +189,7 @@ if (!file.exists("./rare_invasive_2k.rds")) {
 
   rare_inv <- brm(rare | trials(species) ~ log10(Invasive+1) + log10(age) +log10(species) +  (1|family), 
     dat=data, family=binomial(), 
-    iter=20, cov_ranef = list(family = phy_cov),
+    iter=2000, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.95), cores=2)
 
   saveRDS(rare_inv, "./rare_invasive_2k.rds")
