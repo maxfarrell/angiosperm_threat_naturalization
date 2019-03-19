@@ -190,7 +190,7 @@ if (!file.exists("./rare_invasive_2k.rds")) {
   rare_inv <- brm(rare | trials(species) ~ log10(Invasive+1) + log10(new_age) +log10(species) +  (1|family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95), cores=2)
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=2)
 
   saveRDS(rare_inv, "./rare_invasive_2k.rds")
 
@@ -221,7 +221,7 @@ if (!file.exists("./rare_naturalized_2k.rds")) {
   rare_nat <- brm(rare | trials(species) ~ log10(Naturalised+1) + log10(new_age) +log10(species) +  (1|family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95), cores=2)
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=2)
 
   saveRDS(rare_nat, "./rare_naturalized_2k.rds")
 
@@ -253,7 +253,7 @@ if (!file.exists("./rare_environmental_2k.rds")) {
   rare_env <- brm(rare | trials(species) ~ log10(Environ+1) + log10(new_age) +log10(species) +  (1|family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95), cores=2)
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=2)
 
   saveRDS(rare_env, "./rare_environmental_2k.rds")
 
@@ -292,7 +292,7 @@ if (!file.exists("./fit_rare_2k.rds")) {
   fit_rare <- brm(rare | trials(species) ~ forms2 + annual + woody + succulent + climate.sum + wind + herbaceous + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + animal + (1 | family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95,max_treedepth=12))
+    control=list(adapt_delta=0.95,max_treedepth=13))
 
   saveRDS(fit_rare, "./fit_rare_2k.rds")
 
@@ -371,7 +371,7 @@ if (!file.exists("./fit_inv_2k.rds")) {
   fit_inv <- brm(Invasive | trials(species) ~ forms2 + annual + woody + succulent + climate.sum + wind + herbaceous + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + animal + (1 | family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8))
+    control=list(adapt_delta=0.8,max_treedepth=12))
 
   saveRDS(fit_inv, "./fit_inv_2k.rds")
 
@@ -410,7 +410,7 @@ if (!file.exists("./fit_weed_2k.rds")) {
   fit_weed <- brm(Weed | trials(species) ~ forms2 + annual + woody + succulent + climate.sum + wind + herbaceous + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + animal + (1 | family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=11), cores=2)
+    control=list(adapt_delta=0.8, max_treedepth=12), cores=2)
 
   saveRDS(fit_weed, "./fit_weed_2k.rds")
 
@@ -451,7 +451,7 @@ if (!file.exists("./fit_ag_2k.rds")) {
   fit_ag <- brm(Agricultural.Weed | trials(species) ~ forms2 + annual + woody + succulent + climate.sum + wind + herbaceous + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + animal + (1 | family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=11), cores=2)
+    control=list(adapt_delta=0.8, max_treedepth=12), cores=2)
 
   saveRDS(fit_ag, "./fit_ag_2k.rds")
 
@@ -491,7 +491,7 @@ if (!file.exists("./fit_env_2k.rds")) {
   fit_env <- brm(Environ | trials(species) ~ forms2 + annual + woody + succulent + climate.sum + wind + herbaceous + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + animal + (1 | family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=11))
+    control=list(adapt_delta=0.8, max_treedepth=12))
 
   saveRDS(fit_env, "./fit_env_2k.rds")
 
@@ -531,7 +531,7 @@ if (!file.exists("./fit_nox_2k.rds")) {
   fit_nox <- brm(Noxious | trials(species) ~ forms2 + annual + woody + succulent + climate.sum + wind + herbaceous + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + animal + (1 | family), 
     dat=data, family=binomial(), 
     iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=11))
+    control=list(adapt_delta=0.8, max_treedepth=12))
 
   saveRDS(fit_nox, "./fit_nox_2k.rds")
 
