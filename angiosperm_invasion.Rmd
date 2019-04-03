@@ -38,8 +38,6 @@ Outcomes to show:
 
 - Family effects
 
-
-
 ## To Do
 
 - Try models without family age (is this redundant with a phylogenetic covariance matrix?)
@@ -141,6 +139,10 @@ data <- left_join(data,new_ages)
 with(data, plot(age ~ new_age, pch=20))
 with(data, cor(age,new_age))
 
+
+# creating another family level variable (for non-phylogenetic family level effects)
+data$family_name <- data$family
+
 ```
 &nbsp;
 &nbsp;
@@ -189,59 +191,66 @@ with(data, cor(sum.photo, sum.photo2))
 
 if (!file.exists("./rare_invasive_2k.rds")) {
 
-  rare_inv <- brm(rare | trials(species) ~ log10(Invasive+1) + log10(new_age) +log10(species) +  (1|family), 
+  rare_inv <- brm(rare | trials(species) ~ log10(Invasive+1) + log10(new_age) +log10(species) +  (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
+    iter=4000, thin = 4, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
 
   saveRDS(rare_inv, "./rare_invasive_2k.rds")
 
 } else { rare_inv <- readRDS("./rare_invasive_2k.rds")}
 
+# if (!file.exists("./phyo_mod_rare_invasive_4k.rds")) {
 
-# creating another family level variable
-data$family_name <- data$family
+#   phylo_mod_rare_inv <- brm(rare | trials(species) ~ log10(Invasive+1) + log10(new_age) +log10(species) +  (1|family) + (1|family_name), 
+#     dat=data, family=binomial(), 
+#     iter=4000, cov_ranef = list(family = phy_cov),
+#     control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
 
-if (!file.exists("./phyo_mod_rare_invasive_4k.rds")) {
+#   saveRDS(phylo_mod_rare_inv, "./phyo_mod_rare_invasive_4k.rds")
 
-  phylo_mod_rare_inv <- brm(rare | trials(species) ~ log10(Invasive+1) + log10(new_age) +log10(species) +  (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
-    iter=4000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
+# } else { phylo_mod_rare_inv <- readRDS("./phyo_mod_rare_invasive_4k.rds")}
 
-  saveRDS(phylo_mod_rare_inv, "./phyo_mod_rare_invasive_4k.rds")
+# phylo_mod_rare_inv
 
-} else { phylo_mod_rare_inv <- readRDS("./phyo_mod_rare_invasive_4k.rds")}
-
-# # trying sjstats
+# # # trying sjstats
 # require(sjstats)
 
-# # https://cran.r-project.org/web/packages/sjstats/vignettes/bayesian-statistics.html
+# # # https://cran.r-project.org/web/packages/sjstats/vignettes/bayesian-statistics.html
 
-# var_full <- posterior_samples(rare_inv, pars = "sd_family__Intercept")
-# varProp_full <- (var_full^2)/(var_full^2 + (pi^2)/3)
-# hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + 3.289868) = 0")
-# (hyp <- hypothesis(rare_inv, hyp, class = NULL))
+# var_family <- posterior_samples(phylo_mod_rare_inv, pars = "sd_family__Intercept")
+# var_family_name <- posterior_samples(phylo_mod_rare_inv, pars = "sd_family_name__Intercept")
+# varProp_full <- (var_family^2)/(var_family^2 + var_family_name^2 + (pi^2)/3)
+# plot(density(varProp_full))
 
-# icc(rare_inv)
-# icc(rare_inv, ppd=TRUE)
+# hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2 + 3.289868) = 0")
+# (hyp <- hypothesis(phylo_mod_rare_inv, hyp, class = NULL))
+# plot(hyp)
 
-# icc(rare_inv, ppd=TRUE, re.form=~(1|family), typical="median")
-
-# icc(rare_inv, posterior = TRUE) %>% print(prob = .95, digits = 3)
-# icc(rare_inv, posterior = TRUE, ppd=TRUE, typical="median") %>% print(prob = .95, digits = 3)
-
-# icc(rare_inv, posterior = TRUE, ppd=TRUE, typical="median")
+# hyp <- paste("sd_family_name__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2 + 3.289868) = 0")
+# (hyp <- hypothesis(phylo_mod_rare_inv, hyp, class = NULL))
 
 
-# test <- icc(rare_inv, posterior = TRUE)
+# sjstats::icc(phylo_mod_rare_inv)
+# icc(phylo_mod_rare_inv, ppd=TRUE)
 
-# sum(get_re_var(rare_inv))
+# icc(phylo_mod_rare_inv, ppd=TRUE, re.form=~(1|family), typical="median")
 
-# get_re_var(rare_inv)/
+# icc(phylo_mod_rare_inv, posterior = TRUE) %>% print(prob = .95, digits = 3)
+# icc(phylo_mod_rare_inv, posterior = TRUE, ppd=TRUE, typical="median") %>% print(prob = .95, digits = 3)
 
-# rare_inv
+# icc(phylo_mod_rare_inv, posterior = TRUE, ppd=TRUE, typical="median")
 
+# test <- icc(phylo_mod_rare_inv, posterior = TRUE)
+
+# sum(get_re_var(phylo_mod_rare_inv))
+
+# get_re_var(phylo_mod_rare_inv)
+
+
+# ########################
+
+rare_inv
 
 outcome <- summary(rare_inv$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
@@ -263,10 +272,10 @@ ppc_dens_overlay(y=rare_inv$data$rare, pp_rare_inv[1:50, ]) + scale_x_continuous
 
 if (!file.exists("./rare_naturalized_2k.rds")) {
 
-  rare_nat <- brm(rare | trials(species) ~ log10(Naturalised+1) + log10(new_age) +log10(species) +  (1|family), 
+  rare_nat <- brm(rare | trials(species) ~ log10(Naturalised+1) + log10(new_age) +log10(species) +  (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95,max_treedepth=12), cores=2)
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
 
   saveRDS(rare_nat, "./rare_naturalized_2k.rds")
 
@@ -292,13 +301,12 @@ log1 <- scale_x_continuous(trans="log1p")
 ppc_dens_overlay(y=rare_nat$data$rare, pp_rare_nat[1:50, ]) + scale_x_continuous(trans="log1p")
 
 
-
 if (!file.exists("./rare_environmental_2k.rds")) {
 
-  rare_env <- brm(rare | trials(species) ~ log10(Environ+1) + log10(new_age) +log10(species) +  (1|family), 
+  rare_env <- brm(rare | trials(species) ~ log10(Environ+1) + log10(new_age) +log10(species) +  (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95,max_treedepth=12), cores=2)
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
 
   saveRDS(rare_env, "./rare_environmental_2k.rds")
 
@@ -334,9 +342,9 @@ ppc_dens_overlay(y=rare_env$data$rare, pp_rare_env[1:50, ]) + scale_x_continuous
 
 if (!file.exists("./fit_rare_2k.rds")) {
 
-  fit_rare <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1 | family), 
+  fit_rare <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.95,max_treedepth=13))
 
   saveRDS(fit_rare, "./fit_rare_2k.rds")
@@ -372,9 +380,9 @@ ppc_dens_overlay(y=fit_rare$data$rare, pp_rare[1:50, ]) + scale_x_continuous(tra
 
 if (!file.exists("./fit_nat_2k.rds")) {
 
-  fit_nat <- brm(Naturalised | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1 | family), 
+  fit_nat <- brm(Naturalised | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.8, max_treedepth=11))
 
   saveRDS(fit_nat, "./fit_nat_2k.rds")
@@ -413,9 +421,9 @@ ppc_dens_overlay(y=fit_nat$data$Naturalised, pp_nat[1:50, ]) + scale_x_continuou
 
 if (!file.exists("./fit_inv_2k.rds")) {
 
-  fit_inv <- brm(Invasive | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1 | family), 
+  fit_inv <- brm(Invasive | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.8,max_treedepth=12))
 
   saveRDS(fit_inv, "./fit_inv_2k.rds")
@@ -452,10 +460,10 @@ ppc_dens_overlay(y=fit_inv$data$Invasive, pp_inv[1:50, ]) + scale_x_continuous(t
 
 if (!file.exists("./fit_weed_2k.rds")) {
 
-  fit_weed <- brm(Weed | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1 | family), 
+  fit_weed <- brm(Weed | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=12), cores=2)
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.8, max_treedepth=12), cores=4)
 
   saveRDS(fit_weed, "./fit_weed_2k.rds")
 
@@ -493,10 +501,10 @@ ppc_dens_overlay(y=fit_weed$data$Weed, pp_weed[1:50, ]) + scale_x_continuous(tra
 
 if (!file.exists("./fit_ag_2k.rds")) {
 
-  fit_ag <- brm(Agricultural.Weed | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1 | family), 
+  fit_ag <- brm(Agricultural.Weed | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=12), cores=2)
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.8, max_treedepth=12), cores=4)
 
   saveRDS(fit_ag, "./fit_ag_2k.rds")
 
@@ -533,9 +541,9 @@ ppc_dens_overlay(y=fit_ag$data$Agricultural.Weed, pp_ag[1:50, ]) + scale_x_conti
 
 if (!file.exists("./fit_env_2k.rds")) {
 
-  fit_env <- brm(Environ | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1 | family), 
+  fit_env <- brm(Environ | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.8, max_treedepth=12))
 
   saveRDS(fit_env, "./fit_env_2k.rds")
@@ -573,9 +581,9 @@ ppc_dens_overlay(y=fit_env$data$Environ, pp_env[1:50, ]) + scale_x_continuous(tr
 
 if (!file.exists("./fit_nox_2k.rds")) {
 
-  fit_nox <- brm(Noxious | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1 | family), 
+  fit_nox <- brm(Noxious | trials(species) ~ woodiness + climate.sum + shybrids + log10(new_age) + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
-    iter=2000, cov_ranef = list(family = phy_cov),
+    iter=4000, thin=2, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.8, max_treedepth=12))
 
   saveRDS(fit_nox, "./fit_nox_2k.rds")
