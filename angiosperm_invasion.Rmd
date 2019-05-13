@@ -95,7 +95,6 @@ options(mc.cores = parallel::detectCores())
 require(brms)
 require(ggmcmc)
 require(knitr)
-require(phytools)
 # require(Taxonstand)
 
 ```
@@ -503,7 +502,8 @@ grid.arrange(fit_rare_plot,fit_nat_plot,fit_inv_plot, ncol=3)
 
 ## Phylogenetic effects plots
 
-```{r, fig.width=8, fig.height=8}
+```{r, fig.width=8, fig.height=8, eval=F, echo=F}
+require(phytools)
 
 # Extract species level effects
 ranef_phy <- ranef(fit_rare)$family
