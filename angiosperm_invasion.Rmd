@@ -515,7 +515,7 @@ if (!file.exists("./vet_rare_4k.rds")) {
 
 # vet_rare
 
-outcome <- summary(vet_rare$vet)
+outcome <- summary(vet_rare$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
