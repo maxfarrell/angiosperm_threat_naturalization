@@ -12,7 +12,9 @@ output:
 urlcolor: blue
 ---
 
-<!-- knit with Rscript -e "rmarkdown::render('threat_naturalized_plant_families.Rmd')" -->
+<!-- knit with 
+Rscript -e "rmarkdown::render('threat_naturalized_plant_families.Rmd')"
+ -->
 
 <!--  TO DO
 
@@ -239,6 +241,63 @@ sd(rmse_rare)
 
 # Sensitivity analyses with IUCN evaluated species
 
+## IUCN vetted simple rarity model
+
+```{r rare_nat_vetted, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./vet_rare_naturalized_10k.rds")) {
+
+  vet_rare_nat <- brm(rare | trials(vetted) ~ log10(Naturalised+1) + diversification +log10(species) +  (1|family) + (1|family_name), 
+    dat=data_vetted, family=binomial(), 
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
+
+  saveRDS(vet_rare_nat, "./vet_rare_naturalized_10k.rds")
+
+} else { vet_rare_nat <- readRDS("./vet_rare_naturalized_10k.rds")}
+
+# vet_rare_nat
+
+outcome <- summary(vet_rare_nat$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+names1 <- c("Number of naturalized species","Diversification rate","Number of species","SD brownian effects","SD family specific effects")
+
+vet_rare_nat_plot <- stanplot(vet_rare_nat, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
+
+vet_rare_nat_plot
+
+pdf("./plots_tables/vet_rare_nat_plot.pdf", width=4, height=3)
+vet_rare_nat_plot
+dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+
+bayes_R2(vet_rare_nat)
+
+##Posterior predictive checks
+# first make posterior predictions
+pp_vet_rare_nat <- brms::posterior_predict(vet_rare_nat)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=vet_rare_nat$data$rare, pp_vet_rare_nat[1:50, ]) + scale_x_continuous(trans="log1p")
+
+
+# RMSE
+rmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) RMSE(x,vet_rare_nat$data$rare))
+plot(density(rmse_vet_rare_nat), main="RMSE across posterior predictions")
+mean(rmse_vet_rare_nat)
+sd(rmse_vet_rare_nat)
+
+
+```
+
+## IUCN vetted full rarity model
+
 ```{r frac_rare_vetted, echo=TRUE, eval=TRUE}
 
 data_vetted <- data[data$vetted>0,]
@@ -291,61 +350,6 @@ rmse_vet <- apply(pp_rare, 1, function(x) RMSE(x,vet_rare$data$rare))
 plot(density(rmse_vet), main="RMSE across posterior predictions")
 mean(rmse_vet)
 sd(rmse_vet)
-
-
-```
-
-## IUCN vetted rarity model
-
-```{r rare_nat_vetted, echo=TRUE, eval=TRUE}
-
-if (!file.exists("./vet_rare_naturalized_10k.rds")) {
-
-  vet_rare_nat <- brm(rare | trials(vetted) ~ log10(Naturalised+1) + diversification +log10(species) +  (1|family) + (1|family_name), 
-    dat=data_vetted, family=binomial(), 
-    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
-    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
-
-  saveRDS(vet_rare_nat, "./vet_rare_naturalized_10k.rds")
-
-} else { vet_rare_nat <- readRDS("./vet_rare_naturalized_10k.rds")}
-
-# vet_rare_nat
-
-outcome <- summary(vet_rare_nat$fit)
-to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
-to_print <- to_print[-1,]
-
-names1 <- c("Number of naturalized species","Diversification rate","Number of species","SD brownian effects","SD family specific effects")
-
-vet_rare_nat_plot <- stanplot(vet_rare_nat, pars=rownames(to_print), type="intervals", 
-                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
-
-vet_rare_nat_plot
-
-pdf("./plots_tables/vet_rare_nat_plot.pdf", width=4, height=3)
-vet_rare_nat_plot
-dev.off()
-
-rownames(to_print) <- names1
-kable(to_print, digits=2)
-
-bayes_R2(vet_rare_nat)
-
-##Posterior predictive checks
-# first make posterior predictions
-pp_vet_rare_nat <- brms::posterior_predict(vet_rare_nat)
-
-log1 <- scale_x_continuous(trans="log1p")
-
-ppc_dens_overlay(y=vet_rare_nat$data$rare, pp_vet_rare_nat[1:50, ]) + scale_x_continuous(trans="log1p")
-
-
-# RMSE
-rmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) RMSE(x,vet_rare_nat$data$rare))
-plot(density(rmse_vet_rare_nat), main="RMSE across posterior predictions")
-mean(rmse_vet_rare_nat)
-sd(rmse_vet_rare_nat)
 
 
 ```
@@ -580,10 +584,10 @@ sd(rmse_nat)
 
 
 # Combined Forest Plot
-```{r, echo=F, eval=T}
+```{r, echo=T, eval=T}
 
-a <- vet_rare_plot + xlim(-1.5, 1.75)
-b <- fit_nat_plot + xlim(-1.5, 1.75) + theme(axis.text.y=element_blank())
+a <- vet_rare_plot + xlim(-4.5, 5)
+b <- fit_nat_plot + xlim(-4.5, 5) + theme(axis.text.y=element_blank())
 
 theme_set(theme_cowplot(font_size=12)) # reduce default font size
 plot_grid(a, b, labels = c(' ', ' '), align='h', label_x=0.93, rel_widths=c(1,0.66))
@@ -593,9 +597,9 @@ plot_grid(a, b, labels = c(' ', ' '), align='h', label_x=0.93, rel_widths=c(1,0.
 ```
 
 
-# Phylogenetic effects plots
+# Phylogenetic effects plots (IUCN vetted full rarity model)
 
-```{r, fig.width=8, fig.height=8, eval=T, echo=T}
+```{r, fig.width=8, fig.height=8, eval=F, echo=T}
 
 # Extract species level effects
 ranef_phy <- ranef(vet_rare)$family
@@ -672,6 +676,7 @@ plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=co
 dev.off()
 
 
+```
 
 
 ```{r ggtree, eval=F, echo=F}
