@@ -39,6 +39,11 @@ require(knitr)
 require(phytools)
 require(cowplot)
 
+# RMSE function
+RMSE = function(m, o){
+  sqrt(mean((m - o)^2))
+}
+
 ```
 
 # Loading data
@@ -664,11 +669,6 @@ log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=rare_nat$data$rare, pp_rare_nat[1:50, ]) + scale_x_continuous(trans="log1p")
 
-
-# RMSE
-RMSE = function(m, o){
-  sqrt(mean((m - o)^2))
-}
 
 rmse_rare_nat <- apply(pp_rare_nat, 1, function(x) RMSE(x,rare_nat$data$rare))
 plot(density(rmse_rare_nat), main="RMSE across posterior predictions")
