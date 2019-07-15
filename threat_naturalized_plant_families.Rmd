@@ -112,10 +112,30 @@ data <- data[data$family%in%tree$tip.label,]
 phy_cov <- vcv(tree, corr=TRUE)
 
 
+# Scaling predictors 
+
+# Code for scale and unscale with mean=0 sd=0.5 (following Gelman 2008 for logistic regression)
+
+scale_half <- function(x){
+  return( (x-mean(x)) * 0.5/sd(x))
+}
+
+unscale_half <- function(x,original){
+    x*sd(original)*2 + mean(original)  
+}
+
+# Scaling continuous predictors
+data$new_age_scaled <- scale_half(log(data$new_age))
+data$species_scaled <- scale_half(log(data$species))
+data$diversification_scaled <- scale_half(log(data$diversification+1))
+data$Naturalised_scaled <- scale_half(log(data$Naturalised+1))
+
+
 # Subsetting to IUCN vetted species (for rarity models)
 data_vetted <- data[data$vetted>0,]
 tree_vetted <- drop.tip(tree, setdiff(tree$tip.label, as.character(data_vetted$family)))
 phy_cov_vetted <- vcv(tree_vetted, corr=TRUE)
+
 
 ```
 &nbsp;
@@ -130,7 +150,7 @@ phy_cov_vetted <- vcv(tree_vetted, corr=TRUE)
 
 if (!file.exists("./vet_rare_naturalized_10k.rds")) {
 
-  vet_rare_nat <- brm(rare | trials(vetted) ~ log10(Naturalised+1) + diversification +log10(species) +  (1|family) + (1|family_name), 
+  vet_rare_nat <- brm(rare | trials(vetted) ~ Naturalised_scaled + diversification_scaled + new_age_scaled +  (1|family) + (1|family_name), 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
@@ -140,12 +160,13 @@ if (!file.exists("./vet_rare_naturalized_10k.rds")) {
 } else { vet_rare_nat <- readRDS("./vet_rare_naturalized_10k.rds")}
 
 # vet_rare_nat
+# pairs(vet_rare_nat)
 
 outcome <- summary(vet_rare_nat$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Number of naturalized species","Diversification rate","Number of species","SD brownian effects","SD family specific effects")
+names1 <- c("Number of naturalized species","Diversification rate","Family age","SD brownian effects","SD family specific effects")
 
 vet_rare_nat_plot <- stanplot(vet_rare_nat, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
@@ -180,63 +201,123 @@ sd(rmse_vet_rare_nat)
 ```
 
 
-### With diversification x clade age interaction
+### With clade age + species, but no diversification
 
 
 
-```{r rare_nat_vetted_interaction, echo=TRUE, eval=TRUE}
+```{r rare_nat_vetted_v2, echo=TRUE, eval=TRUE}
 
-if (!file.exists("./vet_rare_naturalized_interaction_10k.rds")) {
+if (!file.exists("./vet_rare_naturalized_spec_age_10k.rds")) {
 
-  vet_rare_nat <- brm(rare | trials(vetted) ~ log10(Naturalised+1) + diversification*new_age +log10(species) +  (1|family) + (1|family_name), 
+  vet_rare_nat_v2 <- brm(rare | trials(vetted) ~ Naturalised_scaled + species_scaled + new_age_scaled +  (1|family) + (1|family_name), 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
 
-  saveRDS(vet_rare_nat, "./vet_rare_naturalized_10k.rds")
+  saveRDS(vet_rare_nat_v2, "./vet_rare_naturalized_spec_age_10k.rds")
 
-} else { vet_rare_nat <- readRDS("./vet_rare_naturalized_10k.rds")}
+} else { vet_rare_nat_v2 <- readRDS("./vet_rare_naturalized_spec_age_10k.rds")}
 
-vet_rare_nat
+vet_rare_nat_v2
+pairs(vet_rare_nat_v2)
 
-# outcome <- summary(vet_rare_nat$fit)
-# to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
-# to_print <- to_print[-1,]
+outcome <- summary(vet_rare_nat_v2$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
 
-# names1 <- c("Number of naturalized species","Diversification x clade age","Number of species","SD brownian effects","SD family specific effects")
+names1 <- c("Number of naturalized species","Diversification rate","Number of species","SD brownian effects","SD family specific effects")
 
-# vet_rare_nat_plot <- stanplot(vet_rare_nat, pars=rownames(to_print), type="intervals", 
-#                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
+vet_rare_nat_v2_plot <- stanplot(vet_rare_nat_v2, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
 
-# vet_rare_nat_plot
+vet_rare_nat_v2_plot
 
-# pdf("./plots_tables/vet_rare_nat_plot.pdf", width=4, height=3)
-# vet_rare_nat_plot
-# dev.off()
+pdf("./plots_tables/vet_rare_nat_v2_plot.pdf", width=4, height=3)
+vet_rare_nat_v2_plot
+dev.off()
 
-# rownames(to_print) <- names1
-# kable(to_print, digits=2)
+rownames(to_print) <- names1
+kable(to_print, digits=2)
 
-# bayes_R2(vet_rare_nat)
+bayes_R2(vet_rare_nat_v2)
 
-# ##Posterior predictive checks
-# # first make posterior predictions
-# pp_vet_rare_nat <- brms::posterior_predict(vet_rare_nat)
+##Posterior predictive checks
+# first make posterior predictions
+pp_vet_rare_nat_v2 <- brms::posterior_predict(vet_rare_nat_v2)
 
-# log1 <- scale_x_continuous(trans="log1p")
+log1 <- scale_x_continuous(trans="log1p")
 
-# ppc_dens_overlay(y=vet_rare_nat$data$rare, pp_vet_rare_nat[1:50, ]) + scale_x_continuous(trans="log1p")
+ppc_dens_overlay(y=vet_rare_nat_v2$data$rare, pp_vet_rare_nat_v2[1:50, ]) + scale_x_continuous(trans="log1p")
 
 
-# # RMSE
-# rmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) RMSE(x,vet_rare_nat$data$rare))
-# plot(density(rmse_vet_rare_nat), main="RMSE across posterior predictions")
-# mean(rmse_vet_rare_nat)
-# sd(rmse_vet_rare_nat)
+# RMSE
+rmse_vet_rare_nat_v2 <- apply(pp_vet_rare_nat_v2, 1, function(x) RMSE(x,vet_rare_nat_v2$data$rare))
+plot(density(rmse_vet_rare_nat_v2), main="RMSE across posterior predictions")
+mean(rmse_vet_rare_nat_v2)
+sd(rmse_vet_rare_nat_v2)
 
 
 ```
 
+
+
+### With diversification, clade age, and species
+
+
+```{r rare_nat_vetted_v3, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./vet_rare_naturalized_spec_age_div_10k.rds")) {
+
+  vet_rare_nat_v3 <- brm(rare | trials(vetted) ~ Naturalised_scaled + 
+    diversification_scaled + species_scaled + new_age_scaled +  (1|family) + (1|family_name), 
+    dat=data_vetted, family=binomial(), 
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
+
+  saveRDS(vet_rare_nat_v3, "./vet_rare_naturalized_spec_age_div_10k.rds")
+
+} else { vet_rare_nat_v3 <- readRDS("./vet_rare_naturalized_spec_age_div_10k.rds")}
+
+# vet_rare_nat_v3
+# pairs(vet_rare_nat_v3)
+
+outcome <- summary(vet_rare_nat_v3$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+names1 <- c("Number of naturalized species","Diversification rate","Number of species","Family age","SD brownian effects","SD family specific effects")
+
+vet_rare_nat_v3_plot <- stanplot(vet_rare_nat_v3, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
+
+vet_rare_nat_v3_plot
+
+pdf("./plots_tables/vet_rare_nat_v3_plot.pdf", width=4, height=3)
+vet_rare_nat_v3_plot
+dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+
+bayes_R2(vet_rare_nat_v3)
+
+##Posterior predictive checks
+# first make posterior predictions
+pp_vet_rare_nat_v3 <- brms::posterior_predict(vet_rare_nat_v3)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=vet_rare_nat_v3$data$rare, pp_vet_rare_nat_v3[1:50, ]) + scale_x_continuous(trans="log1p")
+
+
+# RMSE
+rmse_vet_rare_nat_v3 <- apply(pp_vet_rare_nat_v3, 1, function(x) RMSE(x,vet_rare_nat_v3$data$rare))
+plot(density(rmse_vet_rare_nat_v3), main="RMSE across posterior predictions")
+mean(rmse_vet_rare_nat_v3)
+sd(rmse_vet_rare_nat_v3)
+
+
+```
 
 ## IUCN vetted full rarity model
 
@@ -244,7 +325,7 @@ vet_rare_nat
 
 if (!file.exists("./vet_rare_10k.rds")) {
 
-  vet_rare <- brm(rare | trials(vetted) ~ woodiness + climate.sum + shybrids + diversification + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
+  vet_rare <- brm(rare | trials(vetted) ~ woodiness + climate.sum + shybrids + diversification_scaled + new_age_scaled + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.95,max_treedepth=13))
@@ -259,7 +340,7 @@ outcome <- summary(vet_rare$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Number of species","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD brownian effects","SD family specific effects")
+names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Famly age","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD brownian effects","SD family specific effects")
 
 vet_rare_plot <- stanplot(vet_rare, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -298,7 +379,7 @@ sd(rmse_vet)
 
 if (!file.exists("./fit_rare_nofam_10k.rds")) {
 
-  fit_rare_nofam <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + diversification + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual, 
+  fit_rare_nofam <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + diversification_scaled + new_age_scaled + hermaphroditic + dioec2 + monoec2 + asexual, 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4,
     control=list(adapt_delta=0.95,max_treedepth=13))
@@ -313,7 +394,7 @@ outcome <- summary(fit_rare_nofam$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Number of species","Hermaphroditic","Dioeceous","Monoeceous","Asexual")
+names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Famly age","Hermaphroditic","Dioeceous","Monoeceous","Asexual")
 
 fit_rare_nofam_plot <- stanplot(fit_rare_nofam, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -353,7 +434,7 @@ sd(rmse_rare_nofam)
 
 if (!file.exists("./fit_rare_nophylo_10k.rds")) {
 
-  fit_rare_nophylo <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + diversification + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family_name), 
+  fit_rare_nophylo <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + diversification_scaled + new_age_scaled + hermaphroditic + dioec2 + monoec2 + asexual + (1|family_name), 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4,
     control=list(adapt_delta=0.95,max_treedepth=13))
@@ -368,7 +449,7 @@ outcome <- summary(fit_rare_nophylo$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Number of species","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD family specific effects")
+names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Famly age","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD family specific effects")
 
 fit_rare_nophylo_plot <- stanplot(fit_rare_nophylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -408,7 +489,7 @@ sd(rmse_rare_nophylo)
 
 if (!file.exists("./fit_rare_phylo_10k.rds")) {
 
-  fit_rare_phylo <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + diversification + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family), 
+  fit_rare_phylo <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + diversification_scaled + new_age_scaled + hermaphroditic + dioec2 + monoec2 + asexual + (1|family), 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.95,max_treedepth=13))
@@ -423,7 +504,7 @@ outcome <- summary(fit_rare_phylo$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Number of species","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD brownian effects")
+names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Famly age","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD brownian effects")
 
 fit_rare_phylo_plot <- stanplot(fit_rare_phylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -467,7 +548,7 @@ sd(rmse_rare_phylo)
 
 if (!file.exists("./fit_nat_10k.rds")) {
 
-  fit_nat <- brm(Naturalised | trials(species) ~ woodiness + climate.sum + shybrids + diversification + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
+  fit_nat <- brm(Naturalised | trials(species) ~ woodiness + climate.sum + shybrids + diversification_scaled + new_age_scaled + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.8, max_treedepth=11))
@@ -482,7 +563,7 @@ outcome <- summary(fit_nat$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Number of species","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD brownian effects","SD family specific effects")
+names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Famly age","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD brownian effects","SD family specific effects")
 
 fit_nat_plot <- stanplot(fit_nat, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of naturalized species")
@@ -618,141 +699,7 @@ dev.off()
 
 
 
-<!-- OLD CODE & ALTERNATIVE MODELS  -->
-
-
-```{r rare_naturalized, echo=F, eval=F}
-# Relationship between rarity and naturalization
-
-if (!file.exists("./rare_naturalized_10k.rds")) {
-
-  rare_nat <- brm(rare | trials(species) ~ log10(Naturalised+1) + diversification + log10(species) +  (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
-    iter=10000, thin=4, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
-
-  saveRDS(rare_nat, "./rare_naturalized_10k.rds")
-
-} else { rare_nat <- readRDS("./rare_naturalized_10k.rds")}
-
-# rare_nat
-
-outcome <- summary(rare_nat$fit)
-to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
-to_print <- to_print[-1,]
-
-names1 <- c("Number of naturalized species","Diversification rate","Number of species","SD brownian effects","SD family specific effects")
-
-rare_nat_plot <- stanplot(rare_nat, pars=rownames(to_print), type="intervals", 
-                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
-
-rare_nat_plot2 <- stanplot(rare_nat, pars=rownames(to_print), type="intervals", 
-                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rep("", length(names1)), limits=rev(rownames(to_print)))
-
-rownames(to_print) <- names1
-kable(to_print, digits=2)
-
-rare_nat_plot
-
-bayes_R2(rare_nat)
-
-hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
-(hyp <- hypothesis(rare_nat, hyp, class = NULL))
-plot(hyp)
-
-
-##Posterior predictive checks
-# first make posterior predictions
-pp_rare_nat <- brms::posterior_predict(rare_nat)
-
-log1 <- scale_x_continuous(trans="log1p")
-
-ppc_dens_overlay(y=rare_nat$data$rare, pp_rare_nat[1:50, ]) + scale_x_continuous(trans="log1p")
-
-
-rmse_rare_nat <- apply(pp_rare_nat, 1, function(x) RMSE(x,rare_nat$data$rare))
-plot(density(rmse_rare_nat), main="RMSE across posterior predictions")
-mean(rmse_rare_nat)
-sd(rmse_rare_nat)
-
-```
-
-```{r, echo=F, eval=F}
-## Forest plots
-pdf("./plots_tables/rare_nat_plot.pdf", width=4, height=3)
-rare_nat_plot
-dev.off()
-
-```
-
-```{r frac_rare, echo=F, eval=F}
-# Proportion rare species
-
-if (!file.exists("./fit_rare_10k.rds")) {
-
-  fit_rare <- brm(rare | trials(species) ~ woodiness + climate.sum + shybrids + diversification + log10(species) + hermaphroditic + dioec2 + monoec2 + asexual + (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
-    iter=10000, thin=4, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95,max_treedepth=13))
-
-  saveRDS(fit_rare, "./fit_rare_10k.rds")
-
-} else { fit_rare <- readRDS("./fit_rare_10k.rds")}
-
-# fit_rare
-
-outcome <- summary(fit_rare$fit)
-to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
-to_print <- to_print[-1,]
-
-names1 <- c("Woodiness","Climate sum","Number of species hybrids","Diversification rate","Number of species","Hermaphroditic","Dioeceous","Monoeceous","Asexual","SD brownian effects","SD family specific effects")
-
-fit_rare_plot <- stanplot(fit_rare, pars=rownames(to_print), type="intervals", 
-                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
-
-rownames(to_print) <- names1
-kable(to_print, digits=2)
-
-fit_rare_plot
-
-pdf("./plots_tables/fit_rare_plot.pdf", width=4, height=7)
-fit_rare_plot
-dev.off()
-
-bayes_R2(fit_rare)
-
-hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
-(hyp <- hypothesis(fit_rare, hyp, class = NULL))
-plot(hyp)
-
-
-##Posterior predictive checks
-# first make posterior predictions
-pp_rare <- brms::posterior_predict(fit_rare)
-
-log1 <- scale_x_continuous(trans="log1p")
-
-ppc_dens_overlay(y=fit_rare$data$rare, pp_rare[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-
-rmse_rare <- apply(pp_rare, 1, function(x) RMSE(x,fit_rare$data$rare))
-plot(density(rmse_rare), main="RMSE across posterior predictions")
-mean(rmse_rare)
-sd(rmse_rare)
-
-```
-
-
-
-
-
-
-
-
-
-
-
+<!-- OLD CODE -->
 
 
 ```{r ggtree, eval=F, echo=F}
