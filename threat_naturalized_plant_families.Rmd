@@ -218,14 +218,14 @@ if (!file.exists("./vet_rare_naturalized_spec_age_10k.rds")) {
 
 } else { vet_rare_nat_v2 <- readRDS("./vet_rare_naturalized_spec_age_10k.rds")}
 
-vet_rare_nat_v2
-pairs(vet_rare_nat_v2)
+# vet_rare_nat_v2
+# pairs(vet_rare_nat_v2)
 
 outcome <- summary(vet_rare_nat_v2$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Number of naturalized species","Diversification rate","Number of species","SD brownian effects","SD family specific effects")
+names1 <- c("Number of naturalized species","Number of species","Family age","SD brownian effects","SD family specific effects")
 
 vet_rare_nat_v2_plot <- stanplot(vet_rare_nat_v2, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
@@ -610,8 +610,8 @@ b <- fit_nat_plot + xlim(-4.5, 5) + theme(axis.text.y=element_blank())
 theme_set(theme_cowplot(font_size=12)) # reduce default font size
 plot_grid(a, b, labels = c(' ', ' '), align='h', label_x=0.93, rel_widths=c(1,0.66))
 
-# ggsave("plots_tables/combined_forest_plot.png", width=8, height=5, units="in")
-# ggsave("plots_tables/combined_forest_plot.pdf", width=8, height=5, units="in")
+ggsave("plots_tables/combined_forest_plot.png", width=8, height=5, units="in")
+ggsave("plots_tables/combined_forest_plot.pdf", width=8, height=5, units="in")
 
 ```
 
@@ -619,6 +619,8 @@ plot_grid(a, b, labels = c(' ', ' '), align='h', label_x=0.93, rel_widths=c(1,0.
 # Phylogenetic effects plots (IUCN vetted full rarity model)
 
 ```{r, fig.width=8, fig.height=8, eval=F, echo=T}
+
+# Combined plot - rarity
 
 # Extract species level effects
 ranef_phy <- ranef(vet_rare)$family
@@ -637,21 +639,6 @@ ranef_spec <- ranef_spec[tree_small$tip.label,]
 
 # Plot the beside the phylogeny
 cols <- c("#7570b3","#d95f02")
-
-# pdf("./plots_tables/phylo_rarity.pdf", width=10, height=10)
-# plot(tree_small,type="f",TRUE, cex=1,no.margin=FALSE, show.tip.label = FALSE, label.offset=10)
-# tiplabels(pch=21,bg=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)],col="black",cex=abs(ranef_spec$Estimate.Intercept),adj=0)
-# legend("topright",legend=c("2","1","0","-1","-2"),pch=21,
-#        pt.bg=cols[c(1,1,1,2,2)],bty="n",
-#        text.col="gray32",cex=1, pt.cex=c(2,1,0.1,1,2))
-# dev.off()
-
-# pdf("./plots_tables/phylo_rarity_barplot.pdf", width=10, height=10)
-# png("./plots_tables/phylo_rarity_barplot.png", width=10, height=10, units="in", res=300)
-
-
-# Combined plot
-
 
 pdf("./plots_tables/phylo_rarity_barplot_combined.pdf", width=30, height=10)
 par(mfrow=c(1,3))
@@ -679,6 +666,67 @@ plotTree.wBars(tree_small,x=binom_effects,scale=20, type="fan", width=3.75, col=
 # legend(-320,320,legend=c("Positive","Negative"),
 #        col=cols,lty=1, lwd=6, cex=1.3, box.lwd=0, box.col="white")
 
+# Family total Brownian + Family Specific
+
+fam_effects <- abs(ranef_spec$Estimate.Intercept)
+names(fam_effects) <- tree_small$tip.label
+
+# pdf("./plots_tables/phylo_rarity_barplot.pdf", width=10, height=10)
+# png("./plots_tables/phylo_rarity_barplot.png", width=10, height=10, units="in", res=300)
+plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
+
+# legend(-320,320,legend=c("Positive","Negative"),
+#        col=cols,lty=1, lwd=6, cex=1.3, box.lwd=0, box.col="white")
+
+# dev.off()
+
+
+
+# Combined plot - naturalization
+
+# Extract species level effects
+ranef_phy <- ranef(fit_nat)$family
+ranef_binom <- ranef(fit_nat)$family_name
+ranef_spec <- ranef_phy + ranef_binom
+
+ranef_phy <- as.data.frame(unlist(ranef_phy))
+ranef_binom <- as.data.frame(unlist(ranef_binom))
+ranef_spec <- as.data.frame(unlist(ranef_spec))
+
+# re-order efects to match tree
+tree_small <- drop.tip(tree, setdiff(tree$tip.label, rownames(ranef_spec)))
+ranef_phy <- ranef_phy[tree_small$tip.label,]
+ranef_binom <- ranef_binom[tree_small$tip.label,]
+ranef_spec <- ranef_spec[tree_small$tip.label,]
+
+# Plot the beside the phylogeny
+cols <- c("#7570b3","#d95f02")
+
+pdf("./plots_tables/phylo_naturalization_barplot_combined.pdf", width=30, height=10)
+par(mfrow=c(1,3))
+
+# Brownian phylogenetic effects
+
+phy_effects <- abs(ranef_phy$Estimate.Intercept)
+names(phy_effects) <- tree_small$tip.label
+
+plotTree.wBars(tree_small,x=phy_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
+
+legend(-320,320,legend=c("Positive","Negative"),
+       col=cols,lty=1, lwd=6, cex=1.3, box.lwd=0, box.col="white")
+
+
+# Family specific effects (non-brownian)
+
+binom_effects <- abs(ranef_binom$Estimate.Intercept)
+names(binom_effects) <- tree_small$tip.label
+
+# pdf("./plots_tables/phylo_rarity_barplot.pdf", width=10, height=10)
+# png("./plots_tables/phylo_rarity_barplot.png", width=10, height=10, units="in", res=300)
+plotTree.wBars(tree_small,x=binom_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
+
+# legend(-320,320,legend=c("Positive","Negative"),
+#        col=cols,lty=1, lwd=6, cex=1.3, box.lwd=0, box.col="white")
 
 # Family total Brownian + Family Specific
 
@@ -692,7 +740,8 @@ plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=co
 # legend(-320,320,legend=c("Positive","Negative"),
 #        col=cols,lty=1, lwd=6, cex=1.3, box.lwd=0, box.col="white")
 
-dev.off()
+# dev.off()
+
 
 
 ```
