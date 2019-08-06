@@ -208,7 +208,7 @@ sd(rmse_vet_rare_nat)
 
 if (!file.exists("./vet_rare_naturalized_quad_age_10k.rds")) {
 
-  vet_rare_nat_qa <- brm(rare | trials(vetted) ~ Naturalised_scaled + diversification_scaled + new_age_scaled + new_age_scaled^2 + (1|family) + (1|family_name), 
+  vet_rare_nat_qa <- brm(rare | trials(vetted) ~ Naturalised_scaled + diversification_scaled + new_age_scaled + I(new_age_scaled^2) + (1|family) + (1|family_name), 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
