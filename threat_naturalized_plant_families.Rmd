@@ -224,7 +224,7 @@ outcome <- summary(vet_rare_nat_qa$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Number of naturalized species","Diversification rate","Family age","SD brownian effects","SD family specific effects")
+names1 <- c("Number of naturalized species","Diversification rate","Family age", "Family Age ^2","SD brownian effects","SD family specific effects")
 
 vet_rare_nat_qa_plot <- stanplot(vet_rare_nat_qa, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
