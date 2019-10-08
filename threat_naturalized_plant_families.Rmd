@@ -202,7 +202,7 @@ ppc_dens_overlay(y=vet_rare_nat$data$rare, pp_vet_rare_nat[1:50, ]) + scale_x_co
 
 # RMSE
 rmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) RMSE(x,vet_rare_nat$data$rare))
-plot(density(rmse_vet_rare_nat), main="RMSE across posterior predictions")
+# plot(density(rmse_vet_rare_nat), main="RMSE across posterior predictions")
 mean(rmse_vet_rare_nat)
 sd(rmse_vet_rare_nat)
 
@@ -233,7 +233,7 @@ outcome <- summary(vet_rare$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
+names1 <- c("Diversification rate","Famly age","Woodiness","Herbaceous","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
 
 vet_rare_plot <- stanplot(vet_rare, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -259,7 +259,7 @@ ppc_dens_overlay(y=vet_rare$data$rare, pp_rare[1:50, ]) + scale_x_continuous(tra
 
 # RMSE
 rmse_vet <- apply(pp_rare, 1, function(x) RMSE(x,vet_rare$data$rare))
-plot(density(rmse_vet), main="RMSE across posterior predictions")
+# plot(density(rmse_vet), main="RMSE across posterior predictions")
 mean(rmse_vet)
 sd(rmse_vet)
 
@@ -272,8 +272,6 @@ loo(vet_rare)
 
 ## IUCN vetted rarity model: no family level effects
 ```{r frac_rare_nofam, echo=TRUE, eval=TRUE}
-
-names(data)
 
 if (!file.exists("./fit_rare_nofam_10k.rds")) {
 
@@ -292,7 +290,7 @@ outcome <- summary(fit_rare_nofam$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated")
+names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated")
 
 fit_rare_nofam_plot <- stanplot(fit_rare_nofam, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -350,7 +348,7 @@ outcome <- summary(fit_rare_nophylo$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD family specific effects")
+names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD family specific effects")
 
 fit_rare_nophylo_plot <- stanplot(fit_rare_nophylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -407,7 +405,7 @@ outcome <- summary(fit_rare_phylo$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects")
+names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects")
 
 fit_rare_phylo_plot <- stanplot(fit_rare_phylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -467,7 +465,7 @@ outcome <- summary(fit_nat$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
+names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
 
 fit_nat_plot <- stanplot(fit_nat, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of naturalized species")
@@ -676,7 +674,7 @@ outcome <- summary(fit_inv$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
+names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
 
 fit_inv_plot <- stanplot(fit_inv, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of invasive species")
@@ -798,7 +796,7 @@ outcome <- summary(vet_rare_qa$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Family Age ^2", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
+names1 <- c("Diversification rate","Famly age", "Family Age ^2", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
 
 vet_rare_qa_plot <- stanplot(vet_rare_qa, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -855,7 +853,7 @@ outcome <- summary(nonvet_rare$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
+names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
 
 nonvet_rare_plot <- stanplot(nonvet_rare, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
@@ -913,7 +911,7 @@ outcome <- summary(nonvet_rare_qa$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Family Age ^2", "Woodiness","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
+names1 <- c("Diversification rate","Famly age", "Family Age ^2", "Woodiness","Herbaceous","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
 
 nonvet_rare_qa_plot <- stanplot(nonvet_rare_qa, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
