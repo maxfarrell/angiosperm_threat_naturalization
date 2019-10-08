@@ -655,7 +655,7 @@ plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=co
 
 ## Proportion invasive species
 
-```{r frac_nat, echo=TRUE, eval=TRUE}
+```{r frac_inv, echo=TRUE, eval=TRUE}
 
 names(data)
 
