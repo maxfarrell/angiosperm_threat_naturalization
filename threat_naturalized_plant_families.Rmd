@@ -214,7 +214,7 @@ loo(vet_rare_nat)
 
 ## IUCN vetted full rarity model
 
-```{r frac_rnonare_vetted, echo=TRUE, eval=TRUE}
+```{r frac_rare_vetted, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./vet_rare_10k.rds")) {
 
