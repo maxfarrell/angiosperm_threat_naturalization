@@ -779,7 +779,7 @@ loo(vet_rare_nat_qa)
 
 ## IUCN vetted full rarity model with quadratic term
 
-```{r frac_rare_vetted, echo=TRUE, eval=TRUE}
+```{r frac_rare_vetted_qa, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./vet_rare_quad_age_10k.rds")) {
 
@@ -894,7 +894,7 @@ loo(nonvet_rare)
 
 ## IUCN non-vetted full rarity model with quadratic age term
 
-```{r frac_rare_vetted, echo=TRUE, eval=TRUE}
+```{r frac_rare_vetted_qa, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./nonvet_rare_qa_10k.rds")) {
 
