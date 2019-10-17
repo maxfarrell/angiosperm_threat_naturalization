@@ -138,13 +138,15 @@ data$new_age_scaled <- scale_half(log(data$new_age))
 data$species_scaled <- scale_half(log(data$species))
 data$diversification_scaled <- scale_half(log(data$diversification+1))
 data$Naturalised_scaled <- scale_half(log(data$Naturalised+1))
+data$species.hybrids <- scale_half(log(data$species.hybrids+1))
 
 # Subsetting to IUCN vetted species (for rarity models)
 data_vetted <- data[data$vetted>0,]
 tree_vetted <- drop.tip(tree, setdiff(tree$tip.label, as.character(data_vetted$family)))
 phy_cov_vetted <- vcv(tree_vetted, corr=TRUE)
+```
 
-
+```{r vifs}
 # vifs 
 require(car)
 
@@ -152,6 +154,7 @@ vif(lm(rare ~ Naturalised_scaled + diversification_scaled + new_age_scaled, data
 
 vif(lm(rare ~ diversification_scaled + new_age_scaled + woodiness + herbaceous + climate.sum + species.hybrids + hermaphroditic + dioecious + monoecious + asexual + fleshy.fruit + animal, data=data_vetted))
 
+vif(lm(rare ~ diversification_scaled + new_age_scaled + woodiness + herbaceous + climate.sum + species.hybrids + hermaphroditic + dioecious + monoecious + asexual + fleshy.fruit + animal, data=data))
 
 ```
 &nbsp;
