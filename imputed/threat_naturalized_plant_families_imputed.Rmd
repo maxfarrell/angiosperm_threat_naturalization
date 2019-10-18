@@ -133,18 +133,24 @@ unscale_half <- function(x,original){
     x*sd(original)*2 + mean(original)  
 }
 
+
+# Converting species.hybrids to proportion
+data$species.hybrids <- data$species.hybrids/data$species
+
 # Scaling continuous predictors
 data$new_age_scaled <- scale_half(log(data$new_age))
 data$species_scaled <- scale_half(log(data$species))
 data$diversification_scaled <- scale_half(log(data$diversification+1))
 data$Naturalised_scaled <- scale_half(log(data$Naturalised+1))
+data$species.hybrids <- scale_half(data$species.hybrids)
 
 # Subsetting to IUCN vetted species (for rarity models)
 data_vetted <- data[data$vetted>0,]
 tree_vetted <- drop.tip(tree, setdiff(tree$tip.label, as.character(data_vetted$family)))
 phy_cov_vetted <- vcv(tree_vetted, corr=TRUE)
+```
 
-
+```{r vifs}
 # vifs 
 require(car)
 
@@ -152,10 +158,12 @@ vif(lm(rare ~ Naturalised_scaled + diversification_scaled + new_age_scaled, data
 
 vif(lm(rare ~ diversification_scaled + new_age_scaled + woodiness + herbaceous + climate.sum + species.hybrids + hermaphroditic + dioecious + monoecious + asexual + fleshy.fruit + animal, data=data_vetted))
 
+vif(lm(rare ~ diversification_scaled + new_age_scaled + woodiness + herbaceous + climate.sum + species.hybrids + hermaphroditic + dioecious + monoecious + asexual + fleshy.fruit + animal, data=data))
 
 ```
 &nbsp;
 &nbsp;
+
 
 <!-- In terms of models, I would like to redo with the more complete data (and maybe eventually with the imputed data set). I would like to re-include "herbaceous" , "fleshy fruit" and "animal pollination" as predictors. I would like to include the quadratic term for age in the threatened model again. Also, I would like to do a third "invasive" model. -->
 
