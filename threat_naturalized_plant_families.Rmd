@@ -133,12 +133,16 @@ unscale_half <- function(x,original){
     x*sd(original)*2 + mean(original)  
 }
 
+
+# Converting species.hybrids to proportion
+data$species.hybrids <- data$species.hybrids/data$species
+
 # Scaling continuous predictors
 data$new_age_scaled <- scale_half(log(data$new_age))
 data$species_scaled <- scale_half(log(data$species))
 data$diversification_scaled <- scale_half(log(data$diversification+1))
 data$Naturalised_scaled <- scale_half(log(data$Naturalised+1))
-data$species.hybrids <- scale_half(log(data$species.hybrids+1))
+data$species.hybrids <- scale_half(data$species.hybrids)
 
 # Subsetting to IUCN vetted species (for rarity models)
 data_vetted <- data[data$vetted>0,]
