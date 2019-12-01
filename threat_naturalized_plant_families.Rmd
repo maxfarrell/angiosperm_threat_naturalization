@@ -283,9 +283,9 @@ vet_rare_nat_plot <- stanplot(vet_rare_nat, pars=rownames(to_print), type="inter
 
 vet_rare_nat_plot
 
-pdf("./plots_tables/vet_rare_nat_plot.pdf", width=4, height=3)
-vet_rare_nat_plot
-dev.off()
+# pdf("./plots_tables/vet_rare_nat_plot.pdf", width=4, height=3)
+# vet_rare_nat_plot
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -340,9 +340,9 @@ vet_rare_plot <- stanplot(vet_rare, pars=rownames(to_print), type="intervals",
 
 vet_rare_plot
 
-pdf("./plots_tables/vet_rare_plot.pdf", width=4, height=7)
-vet_rare_plot
-dev.off()
+# pdf("./plots_tables/vet_rare_plot.pdf", width=4, height=7)
+# vet_rare_plot
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -375,8 +375,6 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 # Naturalized model
 
-## Proportion naturalized species
-
 ```{r frac_nat, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./fit_nat_10k.rds")) {
@@ -401,9 +399,9 @@ fit_nat_plot <- stanplot(fit_nat, pars=rownames(to_print), type="intervals",
 
 fit_nat_plot
 
-pdf("./plots_tables/fit_nat_plot.pdf", width=4, height=7)
-fit_nat_plot
-dev.off()
+# pdf("./plots_tables/fit_nat_plot.pdf", width=4, height=7)
+# fit_nat_plot
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -432,23 +430,8 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 ```
 
-# Combined Forest Plot
-```{r, echo=T, eval=T}
 
-a <- vet_rare_plot + xlim(-4.5, 5)
-b <- fit_nat_plot + xlim(-4.5, 5) + theme(axis.text.y=element_blank())
-
-theme_set(theme_cowplot(font_size=12)) # reduce default font size
-plot_grid(a, b, labels = c(' ', ' '), align='h', label_x=0.93, rel_widths=c(1,0.66))
-
-# ggsave("plots_tables/combined_forest_plot.png", width=8, height=5, units="in")
-# ggsave("plots_tables/combined_forest_plot.pdf", width=8, height=5, units="in")
-
-```
-
-
-
-```{r, fig.width=8, fig.height=8, eval=T, echo=F}
+```{r, fig.width=8, fig.height=8, eval=F, echo=F}
 # Phylogenetic effects plots (IUCN vetted full rarity model)
 
 # Combined plot - rarity
@@ -585,9 +568,9 @@ kable(to_print, digits=2)
 
 vet_rare_nofam_plot
 
-pdf("./plots_tables/vet_rare_nofam_plot.pdf", width=4, height=7)
-vet_rare_nofam_plot
-dev.off()
+# pdf("./plots_tables/vet_rare_nofam_plot.pdf", width=4, height=7)
+# vet_rare_nofam_plot
+# dev.off()
 
 ##Posterior predictive checks
 # first make posterior predictions
@@ -638,9 +621,9 @@ kable(to_print, digits=2)
 
 vet_rare_nophylo_plot
 
-pdf("./plots_tables/vet_rare_nophylo_plot.pdf", width=4, height=7)
-vet_rare_nophylo_plot
-dev.off()
+# pdf("./plots_tables/vet_rare_nophylo_plot.pdf", width=4, height=7)
+# vet_rare_nophylo_plot
+# dev.off()
 
 ##Posterior predictive checks
 pp_rare_nophylo <- brms::posterior_predict(vet_rare_nophylo)
@@ -690,9 +673,9 @@ kable(to_print, digits=2)
 
 vet_rare_phylo_plot
 
-pdf("./plots_tables/vet_rare_phylo_plot.pdf", width=4, height=7)
-vet_rare_phylo_plot
-dev.off()
+# pdf("./plots_tables/vet_rare_phylo_plot.pdf", width=4, height=7)
+# vet_rare_phylo_plot
+# dev.off()
 
 ##Posterior predictive checks
 pp_rare_phylo <- brms::posterior_predict(vet_rare_phylo)
@@ -739,9 +722,9 @@ nonvet_rare_plot <- stanplot(nonvet_rare, pars=rownames(to_print), type="interva
 
 nonvet_rare_plot
 
-pdf("./plots_tables/nonvet_rare_plot.pdf", width=4, height=7)
-nonvet_rare_plot
-dev.off()
+# pdf("./plots_tables/nonvet_rare_plot.pdf", width=4, height=7)
+# nonvet_rare_plot
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -795,9 +778,9 @@ fit_inv_plot <- stanplot(fit_inv, pars=rownames(to_print), type="intervals",
 
 fit_inv_plot
 
-pdf("./plots_tables/fit_inv_plot.pdf", width=4, height=7)
-fit_inv_plot
-dev.off()
+# pdf("./plots_tables/fit_inv_plot.pdf", width=4, height=7)
+# fit_inv_plot
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
