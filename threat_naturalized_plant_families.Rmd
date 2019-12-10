@@ -38,11 +38,7 @@ require(cowplot)
 require(RColorBrewer)
 require(ggtree)
 require(car)
-
-# RMSE function
-RMSE = function(m, o){
-  sqrt(mean((m - o)^2))
-}
+require(xtable)
 
 # NRMSE function
 nrmse <-  function(obs, pred, type = "sd") {
@@ -140,7 +136,7 @@ phy_cov <- vcv(tree, corr=TRUE)
 
 ```
 
-```{r raw_data_plot, echo=F, eval=F}
+```{r raw_data_plot, echo=F, eval=T}
 
 # Order dat to match tree tip labels
 dat <- data[match(tree$tip.label,data$family),]
@@ -171,7 +167,7 @@ obj<-contMap(p_tree,div,plot=FALSE)
 ##############
 # https://guangchuangyu.github.io/2016/10/facet_plot-a-general-solution-to-associate-data-with-phylogenetic-tree/
 
-cols<-c("#88b7c5","#606890","#18477c","#a36666","#dfc453")
+cols<-c("#88b7c5","#a36666")
 
 fit <- phytools::fastAnc(p_tree,div,vars=TRUE,CI=TRUE)
 td <- data.frame(node = nodeid(p_tree, names(div)),
@@ -193,20 +189,21 @@ p2 <- facet_plot(p, panel = 'Proportion threatened', data = d2,
                 geom = ggstance::geom_barh, 
                 aes(x = -threat), 
                 stat='identity',
-                color=cols[4], fill=cols[4], width=0.03)
+                color=cols[2], fill=cols[2], width=0.03)
+p2
 # p2 # Don't know how to flip axis only on the second plot... will remove negative signs in Inkscape
 
-p3 <- facet_plot(p2, panel = 'Proportion naturalised', data = d2, 
+p3 <- facet_plot(p2, panel = 'Proportion naturalized', data = d2, 
                 geom = ggstance::geom_barh, 
                 aes(x = nat), 
                 stat='identity',
                 color=cols[1],fill=cols[1], width=0.03) #+ scale_x_reverse()
 
-p3 <- p3 + facet_grid(.~panel, scale="free_x") + scale_y_continuous(expand = c(0,3)) + scale_x_continuous(expand = c(0,0.04))
-
 p3
 
-ggsave("./plots_tables/div_threatVetted_nat_plot_2.pdf",p3, height=6,width=8)
+# p4 <- p3 + facet_grid(.~panel, scale="free_x") + scale_y_continuous(expand = c(0,3)) + scale_x_continuous(expand = c(0,0.04))
+
+# ggsave("./plots_tables/div_threatVetted_nat_plot_2.pdf",p4, height=6,width=8)
 
 ```
 
@@ -283,12 +280,14 @@ vet_rare_nat_plot <- stanplot(vet_rare_nat, pars=rownames(to_print), type="inter
 
 vet_rare_nat_plot
 
-# pdf("./plots_tables/vet_rare_nat_plot.pdf", width=4, height=3)
-# vet_rare_nat_plot
+# pdf("./plots_tables/vet_rare_nat_plot.pdf", width=5, height=4)
+# vet_rare_nat_plot + ggtitle("")
 # dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_rare_nat.tex")
 
 ##Posterior predictive checks
 pp_vet_rare_nat <- brms::posterior_predict(vet_rare_nat)
@@ -296,12 +295,6 @@ pp_vet_rare_nat <- brms::posterior_predict(vet_rare_nat)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=vet_rare_nat$data$rare, pp_vet_rare_nat[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-rmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) RMSE(x,vet_rare_nat$data$rare))
-# plot(density(rmse_vet_rare_nat), main="RMSE across posterior predictions")
-mean(rmse_vet_rare_nat)
-sd(rmse_vet_rare_nat)
 
 # NRMSE
 nrmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) nrmse(pred=x,obs=vet_rare_nat$data$rare, type="iq"))
@@ -329,6 +322,8 @@ if (!file.exists("./vet_rare_10k.rds")) {
 
 } else { vet_rare <- readRDS("./vet_rare_10k.rds")}
 
+# prior_summary(vet_rare, all=FALSE)
+
 outcome <- summary(vet_rare$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
@@ -340,12 +335,14 @@ vet_rare_plot <- stanplot(vet_rare, pars=rownames(to_print), type="intervals",
 
 vet_rare_plot
 
-# pdf("./plots_tables/vet_rare_plot.pdf", width=4, height=7)
-# vet_rare_plot
+# pdf("./plots_tables/vet_rare_plot.pdf", width=5, height=4)
+# vet_rare_plot + ggtitle("")
 # dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_rare.tex")
 
 ##Posterior predictive checks
 # first make posterior predictions
@@ -354,11 +351,6 @@ pp_rare <- brms::posterior_predict(vet_rare)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=vet_rare$data$rare, pp_rare[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-rmse_vet <- apply(pp_rare, 1, function(x) RMSE(x,vet_rare$data$rare))
-mean(rmse_vet)
-sd(rmse_vet)
 
 # NRMSE
 nrmse_vet <- apply(pp_rare, 1, function(x) nrmse(pred=x,obs=vet_rare$data$rare, type="iq"))
@@ -399,12 +391,14 @@ fit_nat_plot <- stanplot(fit_nat, pars=rownames(to_print), type="intervals",
 
 fit_nat_plot
 
-# pdf("./plots_tables/fit_nat_plot.pdf", width=4, height=7)
-# fit_nat_plot
+# pdf("./plots_tables/fit_nat_plot.pdf", width=5, height=4)
+# fit_nat_plot + ggtitle("")
 # dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/fit_nat.tex")
 
 ##Posterior predictive checks
 pp_nat <- brms::posterior_predict(fit_nat)
@@ -412,11 +406,6 @@ pp_nat <- brms::posterior_predict(fit_nat)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=fit_nat$data$Naturalised, pp_nat[1:50, ]) + scale_x_continuous(trans="log1p")
-
-rmse_nat <- apply(pp_nat, 1, function(x) RMSE(x,fit_nat$data$Naturalised))
-plot(density(rmse_nat), main="RMSE across posterior predictions")
-mean(rmse_nat)
-sd(rmse_nat)
 
 # NRMSE
 nrmse_nat <- apply(pp_nat, 1, function(x) nrmse(pred=x,obs=fit_nat$data$Naturalised, type="iq"))
@@ -431,7 +420,84 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 ```
 
 
-```{r, fig.width=8, fig.height=8, eval=F, echo=F}
+
+
+```{r fig.width=6, fig.height=5, paper_forest_plots}
+
+# simplified threat model
+outcome <- summary(vet_rare_nat$fit, prob=c(0.1,0.9))
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+to_print <- data.frame(to_print)
+
+names1 <- c("Number of naturalized species","Diversification rate","Family age","SD Brownian effects","SD family specific effects")
+to_print$variable <- as.factor(names1)
+
+
+p <-  ggplot(to_print, aes(x=variable, y=mean)) + scale_x_discrete(limits = rev(    levels(to_print$variable))) +
+      geom_pointrange(aes(ymin=X10., ymax=X90.)) + coord_flip()  + 
+      theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
+      geom_hline(yintercept = 0) + xlab("") + ylab("") +
+      theme(legend.title = element_blank()) 
+p
+
+# ggsave("./plots_tables/threat_nat_forest.pdf", p , height=3,width=6)
+# ggsave("./plots_tables/threat_nat_forest.png", p , height=3,width=6)
+
+
+# combined Threat and Naturalized
+threat_out <- summary(vet_rare$fit, prob=c(0.1,0.9))
+threat_out <- threat_out$summary[grep("^[sd,b]_*",rownames(threat_out$summary)),]
+threat_out <- threat_out[-1,]
+threat_out <- data.frame(threat_out)
+threat_out$group <- rev(letters[1:nrow(threat_out)])
+threat_out$model <- "Threatened"
+
+nat_out <- summary(fit_nat$fit, prob=c(0.1,0.9))
+nat_out <- nat_out$summary[grep("^[sd,b]_*",rownames(nat_out$summary)),]
+nat_out <- nat_out[-1,]
+nat_out <- data.frame(nat_out)
+nat_out$group <- rev(letters[1:nrow(nat_out)])
+nat_out$model <- "Naturalized"
+
+labels=c("Diversification rate","Family age","Variation in growth form","Herbaceous","Climate range variability","Species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual seed production","Fleshy fruits","Animal pollination","SD Brownian effects","SD family specific effects")
+
+threat_out$variable <- labels
+nat_out$variable <- labels
+
+coefs <- rbind(threat_out, nat_out)
+
+coefs$overlap <- c( "n","n","n","n","n","n","y","y","y","y","y","n","n","n",
+                    "n","n","y","n","n","n","y","y","y","n","y","n","n","n")
+
+coefs$opposite <- c("y","y","n","y","y","y","n","n","n","n","n","y","n","n",
+                    "y","y","n","y","y","y","n","n","n","n","n","y","n","n")
+
+coefs$both <- c("ny","ny","nn","ny","ny","ny","yn","yn","yn","yn","yn","ny","nn","nn",
+                "ny","ny","yn","ny","ny","ny","yn","yn","yn","nn","yn","ny","nn","nn")
+
+labels<-rev(labels)
+
+cols<-c("#88b7c5","#a36666")
+
+p2 <- ggplot(coefs, aes(x=group, y=mean, color=model)) + scale_shape_manual(values=c(17,15,17)) + scale_alpha_manual(values=c(1,1,0.4)) +
+  geom_pointrange(aes(ymin=X10., ymax=X90.,shape=both,alpha=both)) + coord_flip()  + 
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+          panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
+  geom_hline(yintercept = 0)  + xlab("") + ylab("") + theme(legend.position = "none") +
+theme(legend.title = element_blank()) + scale_x_discrete(labels=labels) + guides(shape = FALSE, size = FALSE) + scale_colour_manual(values=cols)
+
+p2             
+
+# ggsave("./plots_tables/combined_forest.pdf", p2 , height=5,width=6)
+# ggsave("./plots_tables/combined_forest.png", p2 , height=5,width=6)
+
+
+```
+
+
+```{r, fig.width=8, fig.height=8, eval=T, echo=F}
 # Phylogenetic effects plots (IUCN vetted full rarity model)
 
 # Combined plot - rarity
@@ -454,11 +520,10 @@ ranef_spec <- ranef_spec[tree_small$tip.label,]
 # Plot the beside the phylogeny
 cols <- c("#7570b3","#d95f02")
 
-pdf("./plots_tables/phylo_rarity_barplot_combined.pdf", width=30, height=10)
+# pdf("./plots_tables/phylo_rarity_barplot_combined.pdf", width=30, height=10)
 par(mfrow=c(1,3))
 
 # Brownian phylogenetic effects
-
 phy_effects <- abs(ranef_phy$Estimate.Intercept)
 names(phy_effects) <- tree_small$tip.label
 
@@ -482,8 +547,7 @@ names(fam_effects) <- tree_small$tip.label
 
 plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
 
-dev.off()
-
+# dev.off()
 
 
 # Combined plot - naturalization
@@ -506,7 +570,7 @@ ranef_spec <- ranef_spec[tree_small$tip.label,]
 # Plot the beside the phylogeny
 cols <- c("#7570b3","#d95f02")
 
-pdf("./plots_tables/phylo_naturalization_barplot_combined.pdf", width=30, height=10)
+# pdf("./plots_tables/phylo_naturalization_barplot_combined.pdf", width=30, height=10)
 par(mfrow=c(1,3))
 
 # Brownian phylogenetic effects
@@ -532,7 +596,7 @@ names(fam_effects) <- tree_small$tip.label
 
 plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
 
-dev.off()
+# dev.off()
 
 
 ```
@@ -563,14 +627,17 @@ names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Climat
 vet_rare_nofam_plot <- stanplot(vet_rare_nofam, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
 
-rownames(to_print) <- names1
-kable(to_print, digits=2)
-
 vet_rare_nofam_plot
 
-# pdf("./plots_tables/vet_rare_nofam_plot.pdf", width=4, height=7)
-# vet_rare_nofam_plot
+# pdf("./plots_tables/vet_rare_nofam_plot.pdf", width=5, height=4)
+# vet_rare_nofam_plot + ggtitle("")
 # dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_rare_nofam.tex")
+
 
 ##Posterior predictive checks
 # first make posterior predictions
@@ -579,11 +646,6 @@ pp_rare_nofam <- brms::posterior_predict(vet_rare_nofam)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=vet_rare_nofam$data$rare, pp_rare_nofam[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-rmse_rare_nofam <- apply(pp_rare_nofam, 1, function(x) RMSE(x,vet_rare_nofam$data$rare))
-mean(rmse_rare_nofam)
-sd(rmse_rare_nofam)
 
 # NRMSE
 nrmse_rare_nofam <- apply(pp_rare_nofam, 1, function(x) nrmse(pred=x,obs=vet_rare_nofam$data$rare, type="iq"))
@@ -616,14 +678,18 @@ names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Climat
 vet_rare_nophylo_plot <- stanplot(vet_rare_nophylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
 
-rownames(to_print) <- names1
-kable(to_print, digits=2)
-
 vet_rare_nophylo_plot
 
-# pdf("./plots_tables/vet_rare_nophylo_plot.pdf", width=4, height=7)
-# vet_rare_nophylo_plot
+# pdf("./plots_tables/vet_rare_nophylo_plot.pdf", width=5, height=4)
+# vet_rare_nophylo_plot + ggtitle("")
 # dev.off()
+
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_rare_nophylo.tex")
+
 
 ##Posterior predictive checks
 pp_rare_nophylo <- brms::posterior_predict(vet_rare_nophylo)
@@ -631,11 +697,6 @@ pp_rare_nophylo <- brms::posterior_predict(vet_rare_nophylo)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=vet_rare_nophylo$data$rare, pp_rare_nophylo[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-rmse_rare_nophylo <- apply(pp_rare_nophylo, 1, function(x) RMSE(x,vet_rare_nophylo$data$rare))
-mean(rmse_rare_nophylo)
-sd(rmse_rare_nophylo)
 
 # NRMSE
 nrmse_rare_nophylo <- apply(pp_rare_nophylo, 1, function(x) nrmse(pred=x,obs=vet_rare_nophylo$data$rare, type="iq"))
@@ -668,14 +729,17 @@ names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Climat
 vet_rare_phylo_plot <- stanplot(vet_rare_phylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
 
-rownames(to_print) <- names1
-kable(to_print, digits=2)
-
 vet_rare_phylo_plot
 
-# pdf("./plots_tables/vet_rare_phylo_plot.pdf", width=4, height=7)
-# vet_rare_phylo_plot
+# pdf("./plots_tables/vet_rare_phylo_plot.pdf", width=5, height=4)
+# vet_rare_phylo_plot + ggtitle("")
 # dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_rare_phylo.tex")
+
 
 ##Posterior predictive checks
 pp_rare_phylo <- brms::posterior_predict(vet_rare_phylo)
@@ -683,11 +747,6 @@ pp_rare_phylo <- brms::posterior_predict(vet_rare_phylo)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=vet_rare_phylo$data$rare, pp_rare_phylo[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-rmse_rare_phylo <- apply(pp_rare_phylo, 1, function(x) RMSE(x,vet_rare_phylo$data$rare))
-mean(rmse_rare_phylo)
-sd(rmse_rare_phylo)
 
 # NRMSE
 nrmse_rare_phylo <- apply(pp_rare_phylo, 1, function(x) nrmse(pred=x,obs=vet_rare_phylo$data$rare, type="iq"))
@@ -719,15 +778,16 @@ names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Climat
 
 nonvet_rare_plot <- stanplot(nonvet_rare, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
-
 nonvet_rare_plot
 
-# pdf("./plots_tables/nonvet_rare_plot.pdf", width=4, height=7)
-# nonvet_rare_plot
+# pdf("./plots_tables/nonvet_rare_plot.pdf", width=5, height=4)
+# nonvet_rare_plot + ggtitle("")
 # dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/nonvet_rare.tex")
 
 ##Posterior predictive checks
 pp_rare <- brms::posterior_predict(nonvet_rare)
@@ -735,11 +795,6 @@ pp_rare <- brms::posterior_predict(nonvet_rare)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=nonvet_rare$data$rare, pp_rare[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-rmse_nonvet <- apply(pp_rare, 1, function(x) RMSE(x,nonvet_rare$data$rare))
-mean(rmse_nonvet)
-sd(rmse_nonvet)
 
 # NRMSE
 nrmse_nonvet <- apply(pp_rare, 1, function(x) nrmse(pred=x,obs=nonvet_rare$data$rare, type="iq"))
@@ -778,12 +833,14 @@ fit_inv_plot <- stanplot(fit_inv, pars=rownames(to_print), type="intervals",
 
 fit_inv_plot
 
-# pdf("./plots_tables/fit_inv_plot.pdf", width=4, height=7)
-# fit_inv_plot
+# pdf("./plots_tables/fit_inv_plot.pdf", width=5, height=4)
+# fit_inv_plot + ggtitle("")
 # dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/invasive.tex")
 
 ##Posterior predictive checks
 pp_inv <- brms::posterior_predict(fit_inv)
@@ -791,11 +848,6 @@ pp_inv <- brms::posterior_predict(fit_inv)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=fit_inv$data$Invasive, pp_inv[1:50, ]) + scale_x_continuous(trans="log1p")
-
-# RMSE
-rmse_inv <- apply(pp_inv, 1, function(x) RMSE(x,fit_inv$data$Invasive))
-mean(rmse_inv)
-sd(rmse_inv)
 
 # NRMSE
 nrmse_inv <- apply(pp_inv, 1, function(x) nrmse(pred=x,obs=fit_inv$data$Invasive, type="iq"))
