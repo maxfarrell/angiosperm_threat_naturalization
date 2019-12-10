@@ -190,7 +190,7 @@ p2 <- facet_plot(p, panel = 'Proportion threatened', data = d2,
                 aes(x = -threat), 
                 stat='identity',
                 color=cols[2], fill=cols[2], width=0.03)
-p2
+
 # p2 # Don't know how to flip axis only on the second plot... will remove negative signs in Inkscape
 
 p3 <- facet_plot(p2, panel = 'Proportion naturalized', data = d2, 
