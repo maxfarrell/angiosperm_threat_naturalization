@@ -280,9 +280,9 @@ vet_rare_nat_plot <- stanplot(vet_rare_nat, pars=rownames(to_print), type="inter
 
 vet_rare_nat_plot
 
-pdf("./plots_tables/vet_rare_nat_plot.pdf", width=5, height=4)
-vet_rare_nat_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/vet_rare_nat_plot.pdf", width=5, height=4)
+# vet_rare_nat_plot + ggtitle("")
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -335,9 +335,9 @@ vet_rare_plot <- stanplot(vet_rare, pars=rownames(to_print), type="intervals",
 
 vet_rare_plot
 
-pdf("./plots_tables/vet_rare_plot.pdf", width=5, height=4)
-vet_rare_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/vet_rare_plot.pdf", width=5, height=4)
+# vet_rare_plot + ggtitle("")
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -391,9 +391,9 @@ fit_nat_plot <- stanplot(fit_nat, pars=rownames(to_print), type="intervals",
 
 fit_nat_plot
 
-pdf("./plots_tables/fit_nat_plot.pdf", width=5, height=4)
-fit_nat_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/fit_nat_plot.pdf", width=5, height=4)
+# fit_nat_plot + ggtitle("")
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -442,8 +442,8 @@ p <-  ggplot(to_print, aes(x=variable, y=mean)) + scale_x_discrete(limits = rev(
       theme(legend.title = element_blank()) 
 p
 
-ggsave("./plots_tables/threat_nat_forest.pdf", p , height=3,width=6)
-ggsave("./plots_tables/threat_nat_forest.png", p , height=3,width=6)
+# ggsave("./plots_tables/threat_nat_forest.pdf", p , height=3,width=6)
+# ggsave("./plots_tables/threat_nat_forest.png", p , height=3,width=6)
 
 
 # combined Threat and Naturalized
@@ -490,8 +490,8 @@ theme(legend.title = element_blank()) + scale_x_discrete(labels=labels) + guides
 
 p2             
 
-ggsave("./plots_tables/combined_forest.pdf", p2 , height=5,width=6)
-ggsave("./plots_tables/combined_forest.png", p2 , height=5,width=6)
+# ggsave("./plots_tables/combined_forest.pdf", p2 , height=5,width=6)
+# ggsave("./plots_tables/combined_forest.png", p2 , height=5,width=6)
 
 
 ```
@@ -570,7 +570,7 @@ ranef_spec <- ranef_spec[tree_small$tip.label,]
 # Plot the beside the phylogeny
 cols <- c("#7570b3","#d95f02")
 
-pdf("./plots_tables/phylo_naturalization_barplot_combined.pdf", width=30, height=10)
+# pdf("./plots_tables/phylo_naturalization_barplot_combined.pdf", width=30, height=10)
 par(mfrow=c(1,3))
 
 # Brownian phylogenetic effects
@@ -596,7 +596,7 @@ names(fam_effects) <- tree_small$tip.label
 
 plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
 
-dev.off()
+# dev.off()
 
 
 ```
@@ -629,9 +629,9 @@ vet_rare_nofam_plot <- stanplot(vet_rare_nofam, pars=rownames(to_print), type="i
 
 vet_rare_nofam_plot
 
-pdf("./plots_tables/vet_rare_nofam_plot.pdf", width=5, height=4)
-vet_rare_nofam_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/vet_rare_nofam_plot.pdf", width=5, height=4)
+# vet_rare_nofam_plot + ggtitle("")
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -680,9 +680,9 @@ vet_rare_nophylo_plot <- stanplot(vet_rare_nophylo, pars=rownames(to_print), typ
 
 vet_rare_nophylo_plot
 
-pdf("./plots_tables/vet_rare_nophylo_plot.pdf", width=5, height=4)
-vet_rare_nophylo_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/vet_rare_nophylo_plot.pdf", width=5, height=4)
+# vet_rare_nophylo_plot + ggtitle("")
+# dev.off()
 
 
 rownames(to_print) <- names1
@@ -731,9 +731,9 @@ vet_rare_phylo_plot <- stanplot(vet_rare_phylo, pars=rownames(to_print), type="i
 
 vet_rare_phylo_plot
 
-pdf("./plots_tables/vet_rare_phylo_plot.pdf", width=5, height=4)
-vet_rare_phylo_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/vet_rare_phylo_plot.pdf", width=5, height=4)
+# vet_rare_phylo_plot + ggtitle("")
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -780,9 +780,9 @@ nonvet_rare_plot <- stanplot(nonvet_rare, pars=rownames(to_print), type="interva
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
 nonvet_rare_plot
 
-pdf("./plots_tables/nonvet_rare_plot.pdf", width=5, height=4)
-nonvet_rare_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/nonvet_rare_plot.pdf", width=5, height=4)
+# nonvet_rare_plot + ggtitle("")
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -833,9 +833,9 @@ fit_inv_plot <- stanplot(fit_inv, pars=rownames(to_print), type="intervals",
 
 fit_inv_plot
 
-pdf("./plots_tables/fit_inv_plot.pdf", width=5, height=4)
-fit_inv_plot + ggtitle("")
-dev.off()
+# pdf("./plots_tables/fit_inv_plot.pdf", width=5, height=4)
+# fit_inv_plot + ggtitle("")
+# dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
