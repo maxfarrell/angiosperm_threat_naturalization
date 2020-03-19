@@ -39,6 +39,7 @@ require(RColorBrewer)
 require(ggtree)
 require(car)
 require(xtable)
+require(phytools)
 
 # NRMSE function
 nrmse <-  function(obs, pred, type = "sd") {
