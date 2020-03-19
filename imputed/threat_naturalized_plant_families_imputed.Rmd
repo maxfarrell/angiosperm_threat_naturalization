@@ -39,6 +39,7 @@ require(RColorBrewer)
 require(ggtree)
 require(car)
 require(xtable)
+require(phytools)
 
 # NRMSE function
 nrmse <-  function(obs, pred, type = "sd") {
@@ -136,7 +137,7 @@ phy_cov <- vcv(tree, corr=TRUE)
 
 ```
 
-```{r raw_data_plot, echo=F, eval=T}
+```{r raw_data_plot, echo=F, eval=F}
 
 # Order dat to match tree tip labels
 dat <- data[match(tree$tip.label,data$family),]
