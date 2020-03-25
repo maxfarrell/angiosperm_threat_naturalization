@@ -416,7 +416,7 @@ prior_post_1_sigma
 
 ```
 
-```{r plot_prior_post_simple_brms eval=F, echo=F}
+```{r plot_prior_post_simple_brms, eval=F, echo=F}
 
 ggsave("./plots_tables/prior_post_simple_beta_brms.pdf", prior_post_1_beta , height=4,width=5)
 
@@ -537,7 +537,7 @@ prior_post_2_sigma
 
 ```
 
-```{r plot_prior_post_simple_custom eval=F, echo=F}
+```{r plot_prior_post_simple_custom, eval=F, echo=F}
 
 ggsave("./plots_tables/prior_post_simple_beta_custom.pdf", prior_post_2_beta , height=4,width=5)
 
@@ -652,7 +652,7 @@ prior_post_3_sigma
 
 ```
 
-```{r plot_prior_post_full_brms eval=F, echo=F}
+```{r plot_prior_post_full_brms, eval=F, echo=F}
 
 ggsave("./plots_tables/prior_post_full_beta_brms.pdf", prior_post_3_beta , height=4,width=5)
 
@@ -780,7 +780,7 @@ prior_post_4_sigma
 
 ```
 
-```{r plot_prior_post_full_custom eval=F, echo=F}
+```{r plot_prior_post_full_custom, eval=F, echo=F}
 
 ggsave("./plots_tables/prior_post_full_beta_custom.pdf", prior_post_4_beta , height=4,width=5)
 
@@ -842,8 +842,6 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 
 ```
-
-
 
 
 ```{r fig.width=6, fig.height=5, paper_forest_plots}
