@@ -261,7 +261,7 @@ Visualizatino of brms default priors (blue) compared to custom priors (yellow) i
 
 Priors for the slope parameters:
 
-```{r prior_predict, echo=TRUE, eval=TRUE}
+```{r prior_predict_beta, echo=TRUE, eval=TRUE}
 
 prior <- runif(n=10000, min=-100, max=100) # brms default is actually -Inf to +Inf
 p <- inv_logit(prior)
@@ -286,7 +286,7 @@ The default improper uniform prior used by brms is flat on the log-odd scale, so
 
 Priors for the family-level variance parameters:
 
-```{r prior_predict, echo=TRUE, eval=TRUE}
+```{r prior_predict-sigma, echo=TRUE, eval=TRUE}
 
 prior <- rstudent_t(n=10000, df=3, mu=0, sigma=10) # brms default
 prior <- prior[prior>0]
