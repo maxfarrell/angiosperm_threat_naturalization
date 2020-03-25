@@ -550,7 +550,7 @@ ggsave("./plots_tables/prior_post_simple_sigma_custom.pdf", prior_post_2_sigma ,
 
 ## Full rarity model (IUCN vetted species) - brms default priors
 
-```{r frac_rare_vetted, echo=TRUE, eval=TRUE}
+```{r frac_rare_vetted_brms, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./vet_rare_10k.rds")) {
 
@@ -664,7 +664,7 @@ ggsave("./plots_tables/prior_post_full_sigma_brms.pdf", prior_post_3_sigma , hei
 
 ## Full rarity model (IUCN vetted species) - custom priors (based on McElreath)
 
-```{r frac_rare_vetted, echo=TRUE, eval=TRUE}
+```{r frac_rare_vetted_custom, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./vet_rare_p2_10k.rds")) {
 
