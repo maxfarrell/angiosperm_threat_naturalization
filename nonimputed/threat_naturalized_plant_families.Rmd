@@ -13,7 +13,7 @@ urlcolor: blue
 ---
 
 <!-- knit with 
-Rscript -e "rmarkdown::render('threat_naturalized_plant_families.Rmd')"
+Rscript -e "rmarkdown::render('threat_naturalized_plant_families_imputed.Rmd')"
  -->
 
 # Set up
@@ -56,6 +56,9 @@ nrmse <-  function(obs, pred, type = "sd") {
  return(nrmse)
     
 }
+
+inv_logit <- function(x) {exp(x)/(1+exp(x))}
+
 
 ```
 
@@ -252,10 +255,66 @@ vif(lm(rare ~ diversification_scaled + new_age_scaled + woodiness + herbaceous +
 &nbsp;
 &nbsp;
 
+# Exploration of priors
+
+Visualizatino of brms default priors (blue) compared to custom priors (yellow) inspired by McElreath's book Statistical Rethinking.
+
+Priors for the slope parameters:
+
+```{r prior_predict_beta, echo=TRUE, eval=TRUE}
+
+prior <- runif(n=10000, min=-100, max=100) # brms default is actually -Inf to +Inf
+p <- inv_logit(prior)
+prior2 <- rnorm(n=10000, 0, 1.5) # McElreath
+p2 <- inv_logit(prior2)
+
+plot(density(p, adj=0.1), xlim=c(0,1), col="#56B4E9", main="", xlab=expression(paste("inv_logit (",beta,")")))
+lines(density(p2, adj=0.1), col="#E69F00")
+
+```
+
+```{r prior_plot_1, echo=F, eval=F}
+pdf("./plots_tables/priors_beta.pdf", width=5, height=4)
+plot(density(p, adj=0.1), xlim=c(0,1), col="#56B4E9", main="", xlab=expression(paste("inv_logit (",beta,")")))
+lines(density(p2, adj=0.1), col="#E69F00")
+dev.off()
+
+```
+
+The default improper uniform prior used by brms is flat on the log-odd scale, so when converted to the probabilty scale, puts excess mass near 0 and 1. A Normal(0, 1.5) prior is more reasonable, having a flatter distribution with a mode at 0.5 on the probablity scale. 
+
+
+Priors for the family-level variance parameters:
+
+```{r prior_predict-sigma, echo=TRUE, eval=TRUE}
+
+prior <- rstudent_t(n=10000, df=3, mu=0, sigma=10) # brms default
+prior <- prior[prior>0]
+# p <- inv_logit(prior)
+
+prior2 <- rnorm(n=10000, 0, 1) # McElreath
+prior2 <- prior2[prior2>0]
+# p2 <- inv_logit(prior2)
+
+plot(density(prior2, adj=0.1), xlim=c(0,10), col="#E69F00", main="", xlab=expression(paste("inv_logit (",sigma,")")))
+lines(density(prior, adj=0.1), col="#56B4E9")
+
+```
+
+```{r prior_plot_2, echo=F, eval=T}
+pdf("./plots_tables/priors_sigma.pdf", width=5, height=4)
+plot(density(prior2, adj=0.1), xlim=c(0,10), col="#E69F00", main="", xlab=expression(paste("inv_logit (",sigma,")")))
+lines(density(prior, adj=0.1), col="#56B4E9")
+dev.off()
+
+```
+
+The brms prior is extremely long tailed. Considering we are fitting a non-linear model in which changes in log-odds over over 4 have a diminishing influence due to the ceiling effect of the binomial distribution. With this in mind, a prior of Normal(0,1) constrains the posterior to a more realistic range, and is likely to improve sampling efficiency.
+
 
 # Rarity models  (with IUCN evaluated species)
 
-## Simple rarity model
+## Simple rarity model - brms default priors
 
 ```{r rare_nat_vetted, echo=TRUE, eval=TRUE}
 
@@ -269,6 +328,9 @@ if (!file.exists("./vet_rare_naturalized_10k.rds")) {
   saveRDS(vet_rare_nat, "./vet_rare_naturalized_10k.rds")
 
 } else { vet_rare_nat <- readRDS("./vet_rare_naturalized_10k.rds")}
+
+# prior_summary(vet_rare_nat, all=TRUE)
+# Default if for  b coefficients to have improper priors
 
 outcome <- summary(vet_rare_nat$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
@@ -308,16 +370,195 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 ```
 
-## Full rarity model (IUCN vetted species)
+## Simple rarity model - prior / posterior plots
 
-```{r frac_rare_vetted, echo=TRUE, eval=TRUE}
+```{r prior_posterior_simple_brms, echo=T, eval=T}
+# Plotting influence of prior on posterior for a beta parameter
+# on the log-odds scale
+
+tibble(x = seq(from = -10, to = 10, by = .01)) %>%   
+
+  ggplot() +
+  # the prior
+  # improper uniform prior restricted to (-10,10) to aid visualization
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dunif(x,-10,10)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare_nat),
+               aes(x = b_new_age_scaled), 
+               fill = "#56B4E9", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(-5, 5)) +
+  labs(x="Beta Age (brms priors)", y="Density") + 
+  theme_bw() -> prior_post_1_beta
+
+prior_post_1_beta
+
+# Plotting influence of prior on posterior for a sigma parameter
+
+# SD Family Effect
+tibble(x = seq(from = 0, to = 6, by = .01)) %>%   
+  ggplot() +
+  # the prior
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dstudent_t(x, df=3, mu=0, sigma=10)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare_nat),
+               aes(x = sd_family_name__Intercept), 
+               fill = "#56B4E9", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(0, 5)) +
+  labs(x="SD Family Effects (brms priors)", y="Density") + 
+  theme_bw() -> prior_post_1_sigma
+
+prior_post_1_sigma
+
+
+```
+
+```{r plot_prior_post_simple_brms, eval=F, echo=F}
+
+ggsave("./plots_tables/prior_post_simple_beta_brms.pdf", prior_post_1_beta , height=4,width=5)
+
+ggsave("./plots_tables/prior_post_simple_sigma_brms.pdf", prior_post_1_sigma , height=4,width=5)
+
+```
+
+
+
+## Simple rarity model - custom priors (based on McElreath)
+
+```{r rare_nat_vetted_p2, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./vet_rare_naturalized_p2_10k.rds")) {
+
+  vet_rare_nat_p2 <- brm(rare | trials(vetted) ~ Naturalised_scaled + diversification_scaled + new_age_scaled +  (1|family) + (1|family_name), 
+    dat=data_vetted, family=binomial(),
+
+    # custom priors based on McElreath
+    prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1.5), class = b),
+                prior(normal(0, 1), class = sd)),
+
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
+
+  saveRDS(vet_rare_nat_p2, "./vet_rare_naturalized_p2_10k.rds")
+
+} else { vet_rare_nat_p2 <- readRDS("./vet_rare_naturalized_p2_10k.rds")}
+
+prior_summary(vet_rare_nat_p2, all=TRUE)
+
+outcome <- summary(vet_rare_nat_p2$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+names1 <- c("Number of naturalized species","Diversification rate","Family age","SD brownian effects","SD family specific effects")
+
+vet_rare_nat_p2_plot <- stanplot(vet_rare_nat_p2, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
+
+vet_rare_nat_p2_plot
+
+# pdf("./plots_tables/vet_rare_nat_p2_plot.pdf", width=5, height=4)
+# vet_rare_nat_p2_plot + ggtitle("")
+# dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_rare_nat_p2.tex")
+
+##Posterior predictive checks
+pp_vet_rare_nat_p2 <- brms::posterior_predict(vet_rare_nat_p2)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=vet_rare_nat_p2$data$rare, pp_vet_rare_nat_p2[1:50, ]) + scale_x_continuous(trans="log1p")
+
+
+# NRMSE
+nrmse_vet_rare_nat_p2 <- apply(pp_vet_rare_nat_p2, 1, function(x) nrmse(pred=x,obs=vet_rare_nat_p2$data$rare, type="iq"))
+mean(nrmse_vet_rare_nat_p2)
+sd(nrmse_vet_rare_nat_p2)
+
+# family-level variance due to brownian motion component
+hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
+(hyp <- hypothesis(vet_rare_nat_p2, hyp, class = NULL))
+
+```
+
+
+```{r prior_posterior_custom_simple, echo=T, eval=T}
+
+
+```
+
+
+```{r prior_posterior_simple_custom, echo=T, eval=T}
+# Plotting influence of prior on posterior for a beta parameter
+# on the log-odds scale
+
+tibble(x = seq(from = -10, to = 10, by = .01)) %>%   
+  ggplot() +
+  # the prior
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dnorm(x,0,1.5)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare_nat_p2),
+               aes(x = b_new_age_scaled), 
+               fill = "#E69F00", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(-5, 5)) +
+  labs(x="Beta Age - custom priors", y="Density") + 
+  theme_bw() -> prior_post_2_beta
+
+prior_post_2_beta
+
+# Plotting influence of prior on posterior for a sigma parameter
+
+# SD Family Effect
+tibble(x = seq(from = 0, to = 6, by = .01)) %>%   
+  ggplot() +
+  # the prior
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dnorm(x, 0,1)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare_nat_p2),
+               aes(x = sd_family_name__Intercept), 
+               fill = "#E69F00", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(0, 5)) +
+  labs(x="SD Family Effects (brms priors)", y="Density") + 
+  theme_bw() -> prior_post_2_sigma
+
+prior_post_2_sigma
+
+
+```
+
+```{r plot_prior_post_simple_custom, eval=F, echo=F}
+
+ggsave("./plots_tables/prior_post_simple_beta_custom.pdf", prior_post_2_beta , height=4,width=5)
+
+ggsave("./plots_tables/prior_post_simple_sigma_custom.pdf", prior_post_2_sigma , height=4,width=5)
+
+```
+
+
+
+
+## Full rarity model (IUCN vetted species) - brms default priors
+
+```{r frac_rare_vetted_brms, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./vet_rare_10k.rds")) {
 
   vet_rare <- brm(rare | trials(vetted) ~ diversification_scaled + new_age_scaled + woodiness + herbaceous + climate.sum + species.hybrids + hermaphroditic + dioecious + monoecious + asexual + fleshy.fruit + animal + (1|family) + (1|family_name), 
     dat=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
-    control=list(adapt_delta=0.95,max_treedepth=13))
+    control=list(adapt_delta=0.98,max_treedepth=13))
+    # no divergent transitions
 
   saveRDS(vet_rare, "./vet_rare_10k.rds")
 
@@ -363,8 +604,190 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 (hyp <- hypothesis(vet_rare, hyp, class = NULL))
 # plot(hyp)
 
+```
+
+
+## Full rarity model (IUCN vetted species) - brms prior / posterior plots
+
+```{r prior_posterior_full_brms, echo=T, eval=T}
+# Plotting influence of prior on posterior for a beta parameter
+# on the log-odds scale
+
+tibble(x = seq(from = -10, to = 10, by = .01)) %>%   
+  ggplot() +
+  # the prior
+  # improper uniform prior restricted to (-10,10) to aid visualization
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dunif(x,-10,10)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare),
+               aes(x = b_new_age_scaled), 
+               fill = "#56B4E9", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(-5, 5)) +
+  labs(x="Beta Age (brms priors)", y="Density") + 
+  theme_bw() -> prior_post_3_beta
+
+prior_post_3_beta
+
+# Plotting influence of prior on posterior for a sigma parameter
+
+# SD Family Effect
+tibble(x = seq(from = 0, to = 6, by = .01)) %>%   
+  ggplot() +
+  # the prior
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dstudent_t(x, df=3, mu=0, sigma=10)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare),
+               aes(x = sd_family_name__Intercept), 
+               fill = "#56B4E9", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(0, 5)) +
+  labs(x="SD Family Effects (brms priors)", y="Density") + 
+  theme_bw() -> prior_post_3_sigma
+
+prior_post_3_sigma
+
 
 ```
+
+```{r plot_prior_post_full_brms, eval=F, echo=F}
+
+ggsave("./plots_tables/prior_post_full_beta_brms.pdf", prior_post_3_beta , height=4,width=5)
+
+ggsave("./plots_tables/prior_post_full_sigma_brms.pdf", prior_post_3_sigma , height=4,width=5)
+
+```
+
+
+
+## Full rarity model (IUCN vetted species) - custom priors (based on McElreath)
+
+```{r frac_rare_vetted_custom, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./vet_rare_p2_10k.rds")) {
+
+  vet_rare_p2 <- brm(rare | trials(vetted) ~ diversification_scaled + new_age_scaled + woodiness + herbaceous + climate.sum + species.hybrids + hermaphroditic + dioecious + monoecious + asexual + fleshy.fruit + animal + (1|family) + (1|family_name), 
+
+    # custom priors based on McElreath
+    prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1.5), class = b),
+                prior(normal(0, 1), class = sd)),
+
+    dat=data_vetted, family=binomial(), 
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
+    control=list(adapt_delta=0.98,max_treedepth=13))
+
+  # no divergent transitions
+
+  saveRDS(vet_rare_p2, "./vet_rare_p2_10k.rds")
+
+} else { vet_rare_p2 <- readRDS("./vet_rare_p2_10k.rds")}
+
+
+# prior_summary(vet_rare_p2, all=FALSE)
+
+outcome <- summary(vet_rare_p2$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+# Diagnosing Divergent Transitions
+pos <- as.array(vet_rare_p2)
+np <- nuts_params(vet_rare_p2)
+png("./plots_tables/vet_rare_p2_pairs.png", width=30, height=24)
+mcmc_pairs(pos, np=np, pars=rownames(to_print))
+dev.off()
+
+names1 <- c("Diversification rate","Famly age","Woodiness","Herbaceous","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
+
+vet_rare_p2_plot <- stanplot(vet_rare_p2, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion rare species")
+
+vet_rare_p2_plot
+
+# pdf("./plots_tables/vet_rare_p2_plot.pdf", width=5, height=4)
+# vet_rare_p2_plot + ggtitle("")
+# dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_rare_p2.tex")
+
+##Posterior predictive checks
+# first make posterior predictions
+pp_rare <- brms::posterior_predict(vet_rare_p2)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=vet_rare_p2$data$rare, pp_rare[1:50, ]) + scale_x_continuous(trans="log1p")
+
+# NRMSE
+nrmse_vet <- apply(pp_rare, 1, function(x) nrmse(pred=x,obs=vet_rare_p2$data$rare, type="iq"))
+mean(nrmse_vet)
+sd(nrmse_vet)
+
+# family-level variance due to brownian motion component
+hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
+(hyp <- hypothesis(vet_rare_p2, hyp, class = NULL))
+# plot(hyp)
+```
+
+
+## Full rarity model (IUCN vetted species) - custom prior / posterior plots
+
+```{r prior_posterior_full_custom, echo=T, eval=T}
+# Plotting influence of prior on posterior for a beta parameter
+# on the log-odds scale
+
+tibble(x = seq(from = -10, to = 10, by = .01)) %>%   
+  ggplot() +
+  # the prior
+  # improper uniform prior restricted to (-10,10) to aid visualization
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dunif(x,-10,10)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare_p2),
+               aes(x = b_new_age_scaled), 
+               fill = "#E69F00", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(-5, 5)) +
+  labs(x="Beta Age (brms priors)", y="Density") + 
+  theme_bw() -> prior_post_4_beta
+
+prior_post_4_beta
+
+# Plotting influence of prior on posterior for a sigma parameter
+
+# SD Family Effect
+tibble(x = seq(from = 0, to = 6, by = .01)) %>%   
+  ggplot() +
+  # the prior
+  geom_ribbon(aes(x = x, ymin = 0, ymax = dstudent_t(x, df=3, mu=0, sigma=10)),
+              fill = "#A9A9A9", alpha = 1/2) +
+  # the posterior
+  geom_density(data = posterior_samples(vet_rare_p2),
+               aes(x = sd_family_name__Intercept), 
+               fill = "#E69F00", size = 0, alpha = 1/2) +
+  scale_y_continuous() +
+  coord_cartesian(xlim = c(0, 5)) +
+  labs(x="SD Family Effects (brms priors)", y="Density") + 
+  theme_bw() -> prior_post_4_sigma
+
+prior_post_4_sigma
+
+
+```
+
+```{r plot_prior_post_full_custom, eval=F, echo=F}
+
+ggsave("./plots_tables/prior_post_full_beta_custom.pdf", prior_post_4_beta , height=4,width=5)
+
+ggsave("./plots_tables/prior_post_full_sigma_custom.pdf", prior_post_4_sigma , height=4,width=5)
+
+```
+
 
 # Naturalized model
 
@@ -419,8 +842,6 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 
 ```
-
-
 
 
 ```{r fig.width=6, fig.height=5, paper_forest_plots}
@@ -648,6 +1069,7 @@ log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=vet_rare_nofam$data$rare, pp_rare_nofam[1:50, ]) + scale_x_continuous(trans="log1p")
 
+
 # NRMSE
 nrmse_rare_nofam <- apply(pp_rare_nofam, 1, function(x) nrmse(pred=x,obs=vet_rare_nofam$data$rare, type="iq"))
 mean(nrmse_rare_nofam)
@@ -748,6 +1170,7 @@ pp_rare_phylo <- brms::posterior_predict(vet_rare_phylo)
 log1 <- scale_x_continuous(trans="log1p")
 
 ppc_dens_overlay(y=vet_rare_phylo$data$rare, pp_rare_phylo[1:50, ]) + scale_x_continuous(trans="log1p")
+
 
 # NRMSE
 nrmse_rare_phylo <- apply(pp_rare_phylo, 1, function(x) nrmse(pred=x,obs=vet_rare_phylo$data$rare, type="iq"))
