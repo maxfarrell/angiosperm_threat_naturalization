@@ -257,7 +257,7 @@ vif(lm(rare ~ diversification_scaled + new_age_scaled + woodiness + herbaceous +
 
 # Exploration of priors
 
-Visualizatino of brms default priors (blue) compared to custom priors (yellow) inspired by McElreath's book Statistical Rethinking.
+Visualization of brms default priors (blue) compared to custom priors (yellow) inspired by McElreath's book Statistical Rethinking.
 
 Priors for the slope parameters:
 
@@ -447,7 +447,7 @@ if (!file.exists("./vet_rare_naturalized_p2_10k.rds")) {
 
 } else { vet_rare_nat_p2 <- readRDS("./vet_rare_naturalized_p2_10k.rds")}
 
-prior_summary(vet_rare_nat_p2, all=TRUE)
+# prior_summary(vet_rare_nat_p2, all=TRUE)
 
 outcome <- summary(vet_rare_nat_p2$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
@@ -685,19 +685,11 @@ if (!file.exists("./vet_rare_p2_10k.rds")) {
 
 } else { vet_rare_p2 <- readRDS("./vet_rare_p2_10k.rds")}
 
-
 # prior_summary(vet_rare_p2, all=FALSE)
 
 outcome <- summary(vet_rare_p2$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
-
-# Diagnosing Divergent Transitions
-pos <- as.array(vet_rare_p2)
-np <- nuts_params(vet_rare_p2)
-png("./plots_tables/vet_rare_p2_pairs.png", width=30, height=24)
-mcmc_pairs(pos, np=np, pars=rownames(to_print))
-dev.off()
 
 names1 <- c("Diversification rate","Famly age","Woodiness","Herbaceous","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects","SD family specific effects")
 
