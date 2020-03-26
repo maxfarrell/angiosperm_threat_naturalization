@@ -41,7 +41,7 @@ require(car)
 require(xtable)
 require(phytools)
 
-# NRMSE function
+# Functions
 nrmse <-  function(obs, pred, type = "sd") {
   
     squared_sums <- sum((obs - pred)^2)
@@ -55,6 +55,10 @@ nrmse <-  function(obs, pred, type = "sd") {
     nrmse <- round(nrmse, 3)
  return(nrmse)
     
+}
+
+rmse <- function(obs, pred){
+    sqrt(mean((obs - pred)^2))
 }
 
 inv_logit <- function(x) {exp(x)/(1+exp(x))}
@@ -364,6 +368,11 @@ nrmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) nrmse(pred=x,obs=vet
 mean(nrmse_vet_rare_nat)
 sd(nrmse_vet_rare_nat)
 
+# RMSE
+rmse_vet_rare_nat <- apply(pp_vet_rare_nat, 1, function(x) rmse(pred=x,obs=vet_rare_nat$data$rare))
+mean(rmse_vet_rare_nat)
+sd(rmse_vet_rare_nat)
+
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
 (hyp <- hypothesis(vet_rare_nat, hyp, class = NULL))
@@ -482,6 +491,12 @@ nrmse_vet_rare_nat_p2 <- apply(pp_vet_rare_nat_p2, 1, function(x) nrmse(pred=x,o
 mean(nrmse_vet_rare_nat_p2)
 sd(nrmse_vet_rare_nat_p2)
 
+# RMSE
+rmse_vet_rare_nat_p2 <- apply(pp_vet_rare_nat_p2, 1, function(x) rmse(pred=x,obs=vet_rare_nat_p2$data$rare))
+mean(rmse_vet_rare_nat_p2)
+sd(rmse_vet_rare_nat_p2)
+
+
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
 (hyp <- hypothesis(vet_rare_nat_p2, hyp, class = NULL))
@@ -598,6 +613,11 @@ ppc_dens_overlay(y=vet_rare$data$rare, pp_rare[1:50, ]) + scale_x_continuous(tra
 nrmse_vet <- apply(pp_rare, 1, function(x) nrmse(pred=x,obs=vet_rare$data$rare, type="iq"))
 mean(nrmse_vet)
 sd(nrmse_vet)
+
+# RMSE
+rmse_vet <- apply(pp_rare, 1, function(x) rmse(pred=x,obs=vet_rare$data$rare))
+mean(rmse_vet)
+sd(rmse_vet)
 
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
@@ -720,6 +740,11 @@ nrmse_vet <- apply(pp_rare, 1, function(x) nrmse(pred=x,obs=vet_rare_p2$data$rar
 mean(nrmse_vet)
 sd(nrmse_vet)
 
+# RMSE
+rmse_vet <- apply(pp_rare, 1, function(x) rmse(pred=x,obs=vet_rare_p2$data$rare))
+mean(rmse_vet)
+sd(rmse_vet)
+
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
 (hyp <- hypothesis(vet_rare_p2, hyp, class = NULL))
@@ -827,6 +852,11 @@ ppc_dens_overlay(y=fit_nat$data$Naturalised, pp_nat[1:50, ]) + scale_x_continuou
 nrmse_nat <- apply(pp_nat, 1, function(x) nrmse(pred=x,obs=fit_nat$data$Naturalised, type="iq"))
 mean(nrmse_nat)
 sd(nrmse_nat)
+
+# RMSE
+rmse_nat <- apply(pp_nat, 1, function(x) rmse(pred=x,obs=fit_nat$data$Naturalised))
+mean(rmse_nat)
+sd(rmse_nat)
 
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
@@ -1067,6 +1097,11 @@ nrmse_rare_nofam <- apply(pp_rare_nofam, 1, function(x) nrmse(pred=x,obs=vet_rar
 mean(nrmse_rare_nofam)
 sd(nrmse_rare_nofam)
 
+# RMSE
+rmse_rare_nofam <- apply(pp_rare_nofam, 1, function(x) rmse(pred=x,obs=vet_rare_nofam$data$rare))
+mean(rmse_rare_nofam)
+sd(rmse_rare_nofam)
+
 ```
 
 ## Full rarity model: only non-brownian family effects
@@ -1117,6 +1152,11 @@ ppc_dens_overlay(y=vet_rare_nophylo$data$rare, pp_rare_nophylo[1:50, ]) + scale_
 nrmse_rare_nophylo <- apply(pp_rare_nophylo, 1, function(x) nrmse(pred=x,obs=vet_rare_nophylo$data$rare, type="iq"))
 mean(nrmse_rare_nophylo)
 sd(nrmse_rare_nophylo)
+
+# RMSE
+rmse_rare_nophylo <- apply(pp_rare_nophylo, 1, function(x) rmse(pred=x,obs=vet_rare_nophylo$data$rare))
+mean(rmse_rare_nophylo)
+sd(rmse_rare_nophylo)
 
 ```
 
@@ -1169,6 +1209,11 @@ nrmse_rare_phylo <- apply(pp_rare_phylo, 1, function(x) nrmse(pred=x,obs=vet_rar
 mean(nrmse_rare_phylo)
 sd(nrmse_rare_phylo)
 
+# RMSE
+rmse_rare_phylo <- apply(pp_rare_phylo, 1, function(x) rmse(pred=x,obs=vet_rare_phylo$data$rare))
+mean(rmse_rare_phylo)
+sd(rmse_rare_phylo)
+
 ```
 
 ## Full rarity model (total species richness - not vetted by IUCN)
@@ -1216,6 +1261,11 @@ ppc_dens_overlay(y=nonvet_rare$data$rare, pp_rare[1:50, ]) + scale_x_continuous(
 nrmse_nonvet <- apply(pp_rare, 1, function(x) nrmse(pred=x,obs=nonvet_rare$data$rare, type="iq"))
 mean(nrmse_nonvet)
 sd(nrmse_nonvet)
+
+# RMSE
+rmse_nonvet <- apply(pp_rare, 1, function(x) rmse(pred=x,obs=nonvet_rare$data$rare))
+mean(rmse_nonvet)
+sd(rmse_nonvet)
 
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
@@ -1269,6 +1319,11 @@ ppc_dens_overlay(y=fit_inv$data$Invasive, pp_inv[1:50, ]) + scale_x_continuous(t
 nrmse_inv <- apply(pp_inv, 1, function(x) nrmse(pred=x,obs=fit_inv$data$Invasive, type="iq"))
 mean(nrmse_inv)
 sd(nrmse_inv)
+
+# RMSE
+rmse_inv <- apply(pp_inv, 1, function(x) rmse(pred=x,obs=fit_inv$data$Invasive))
+mean(rmse_inv)
+sd(rmse_inv)
 
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
