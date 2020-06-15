@@ -13,7 +13,7 @@ urlcolor: blue
 ---
 
 <!-- knit with 
-Rscript -e "rmarkdown::render('threat_naturalized_plant_families_imputed.Rmd')"
+Rscript -e "rmarkdown::render('threat_naturalized_plant_families.Rmd')"
  -->
 
 # Set up
@@ -581,7 +581,7 @@ outcome <- summary(vet_threatened$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
 
 vet_threatened_plot <- stanplot(vet_threatened, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
@@ -707,7 +707,7 @@ outcome <- summary(vet_threatened_p2$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
 
 vet_threatened_p2_plot <- stanplot(vet_threatened_p2, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
@@ -821,7 +821,7 @@ outcome <- summary(fit_nat$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
 
 fit_nat_plot <- stanplot(fit_nat, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of naturalized species")
@@ -1233,7 +1233,7 @@ outcome <- summary(nonvet_threatened$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
 
 nonvet_threatened_plot <- stanplot(nonvet_threatened, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
@@ -1290,7 +1290,7 @@ outcome <- summary(fit_inv$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
 
 fit_inv_plot <- stanplot(fit_inv, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of invasive species")
