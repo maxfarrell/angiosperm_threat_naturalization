@@ -1277,7 +1277,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 if (!file.exists("./fit_inv_10k.rds")) {
 
-  fit_inv <- brm(Invasive | trials(species) ~ diversification_scaled + new_age_scaled +  hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
+  fit_inv <- brm(invasive | trials(species) ~ diversification_scaled + new_age_scaled +  hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
     dat=data, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.8, max_treedepth=11))
