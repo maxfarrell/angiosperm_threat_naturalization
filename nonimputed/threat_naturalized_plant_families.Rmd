@@ -13,7 +13,7 @@ urlcolor: blue
 ---
 
 <!-- knit with 
-  
+Rscript -e "rmarkdown::render('threat_naturalized_plant_families.Rmd')"  
  -->
 
 # Set up
