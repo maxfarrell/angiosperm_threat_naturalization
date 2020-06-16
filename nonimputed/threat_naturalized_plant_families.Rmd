@@ -13,7 +13,7 @@ urlcolor: blue
 ---
 
 <!-- knit with 
-Rscript -e "rmarkdown::render('threat_naturalized_plant_families.Rmd')"
+  
  -->
 
 # Set up
@@ -1064,7 +1064,7 @@ outcome <- summary(vet_threatened_nofam$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual")
 
 vet_threatened_nofam_plot <- stanplot(vet_threatened_nofam, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
@@ -1121,7 +1121,7 @@ outcome <- summary(vet_threatened_nophylo$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD family specific effects")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects")
 
 vet_threatened_nophylo_plot <- stanplot(vet_threatened_nophylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
@@ -1177,7 +1177,7 @@ outcome <- summary(vet_threatened_phylo$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Woodiness","Herbaceous","Climate sum","Number of species hybrids","Hermaphroditic","Dioecious","Monoecious","Asexual","Fleshy fruit","Animal pollinated","SD brownian effects")
+names1 <- c("Diversification rate","Famly age", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects")
 
 vet_threatened_phylo_plot <- stanplot(vet_threatened_phylo, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
