@@ -76,11 +76,14 @@ data <- read.csv("./sp.threat.nat.csv", as.is=F)
 data[data$threatened>data$species,]
 
 # increasing species by 1 to match
-data$species[data$family=="Metteniusaceae"] <- 8
+data$species[data$family=="Asteropeiaceae"] <- 6
 
-nrow(data)# 409
-range(data$vetted)
-nrow(data[data$vetted>0,])# 265
+nrow(data)# 404
+range(data$vetted)# 0-1992
+nrow(data[data$vetted>0,])# 208
+
+# Changing "species.hybrids" to "hybrids"
+data <- data %>% rename(hybrids = species.hybrids) 
 
 ### Zanne tree & generating tree representing families
 tree <- read.tree("./Vascular_Plants_rooted.dated.tre")
@@ -125,7 +128,6 @@ setdiff(data$family, tree$tip.label)
 
 # Identify families in tree with no data
 setdiff(tree$tip.label, data$family)
-# none
 
 # remove any missing families in data
 data <- data[data$family%in%tree$tip.label,]
@@ -136,9 +138,14 @@ tree <- drop.tip(tree, setdiff(tree$tip.label, as.character(data$family)))
 # phylogenetic correlation structure
 phy_cov <- vcv(tree, corr=TRUE)
 
+nrow(data)#395
+nrow(data[data$vetted>0,])#207
+
 ```
 
 ```{r raw_data_plot, echo=F, eval=F}
+
+require(ggtree)
 
 # Order dat to match tree tip labels
 dat <- data[match(tree$tip.label,data$family),]
