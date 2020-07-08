@@ -143,7 +143,7 @@ nrow(data[data$vetted>0,])#207
 
 ```
 
-```{r raw_data_plot, echo=F, eval=F}
+```{r raw_data_plot, echo=F, eval=T}
 
 require(ggtree)
 
@@ -209,10 +209,11 @@ p3 <- facet_plot(p2, panel = 'Proportion naturalized', data = d2,
                 color=cols[1],fill=cols[1], width=0.03) #+ scale_x_reverse()
 
 p3
+ggsave("./plots_tables/div_threatVetted_nat_plot_2.pdf",p3, height=6,width=8)
 
 # p4 <- p3 + facet_grid(.~panel, scale="free_x") + scale_y_continuous(expand = c(0,3)) + scale_x_continuous(expand = c(0,0.04))
+# p4
 
-# ggsave("./plots_tables/div_threatVetted_nat_plot_2.pdf",p4, height=6,width=8)
 
 ```
 
@@ -427,7 +428,7 @@ prior_post_1_sigma
 
 ```
 
-```{r plot_prior_post_simple_brms, eval=F, echo=F}
+```{r plot_prior_post_simple_brms, eval=T, echo=F}
 
 ggsave("./plots_tables/prior_post_simple_beta_brms.pdf", prior_post_1_beta , height=4,width=5)
 
@@ -438,7 +439,7 @@ ggsave("./plots_tables/prior_post_simple_sigma_brms.pdf", prior_post_1_sigma , h
 
 
 ## Simple rarity model - custom priors (based on McElreath)
-
+  
 ```{r threatened_nat_vetted_p2, echo=TRUE, eval=TRUE}
 
 if (!file.exists("./vet_threatened_naturalized_p2_10k.rds")) {
@@ -554,7 +555,7 @@ prior_post_2_sigma
 
 ```
 
-```{r plot_prior_post_simple_custom, eval=F, echo=F}
+```{r plot_prior_post_simple_custom, eval=T, echo=F}
 
 ggsave("./plots_tables/prior_post_simple_beta_custom.pdf", prior_post_2_beta , height=4,width=5)
 
@@ -800,7 +801,7 @@ prior_post_4_sigma
 
 ```
 
-```{r plot_prior_post_full_custom, eval=F, echo=F}
+```{r plot_prior_post_full_custom, eval=T, echo=F}
 
 ggsave("./plots_tables/prior_post_full_beta_custom.pdf", prior_post_4_beta , height=4,width=5)
 
@@ -869,9 +870,8 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 ```
 
 
-NOT MAKING THESE PLOTS UNTIL KNOWING THE OVERLAPS
 
-```{r fig.width=6, fig.height=5, paper_forest_plots, eval=FALSE}
+```{r fig.width=6, fig.height=5, paper_forest_plots, eval=TRUE}
 
 # simplified threat model
 outcome <- summary(vet_threatened_nat$fit, prob=c(0.1,0.9))
@@ -891,8 +891,8 @@ p <-  ggplot(to_print, aes(x=variable, y=mean)) + scale_x_discrete(limits = rev(
       theme(legend.title = element_blank()) 
 p
 
-# ggsave("./plots_tables/threat_nat_forest.pdf", p , height=3,width=6)
-# ggsave("./plots_tables/threat_nat_forest.png", p , height=3,width=6)
+ggsave("./plots_tables/threat_nat_forest.pdf", p , height=3,width=6)
+ggsave("./plots_tables/threat_nat_forest.png", p , height=3,width=6)
 
 
 # combined Threat and Naturalized
@@ -917,20 +917,26 @@ nat_out$variable <- labels
 
 coefs <- rbind(threat_out, nat_out)
 
-coefs$overlap <- c( "n","n","n","n","n","n","y","y","y","y","y","n","n","n",
-                    "n","n","y","n","n","n","y","y","y","n","y","n","n","n")
+coefs$overlap <- c( "n","n","n","n","y",
+                    "n","n","y","y","n","n",
 
-coefs$opposite <- c("y","y","n","y","y","y","n","n","n","n","n","y","n","n",
-                    "y","y","n","y","y","y","n","n","n","n","n","y","n","n")
+                    "n","n","n","n","y",
+                    "n","n","n","n","n","n")
 
-coefs$both <- c("ny","ny","nn","ny","ny","ny","yn","yn","yn","yn","yn","ny","nn","nn",
-                "ny","ny","yn","ny","ny","ny","yn","yn","yn","nn","yn","ny","nn","nn")
+coefs$opposite <- c(
+                    "y","y","y","y","n",
+                    "y","y","y","n","n","n",
+
+                    "y","y","y","y","n",
+                    "y","y","y","n","n","n")
+
+coefs$both <- paste0(coefs$overlap,coefs$opposite)
 
 labels<-rev(labels)
 
 cols<-c("#88b7c5","#a36666")
 
-p2 <- ggplot(coefs, aes(x=group, y=mean, color=model)) + scale_shape_manual(values=c(17,15,17)) + scale_alpha_manual(values=c(1,1,0.4)) +
+p2 <- ggplot(coefs, aes(x=group, y=mean, color=model)) + scale_shape_manual(values=c(17,15,17,15)) + scale_alpha_manual(values=c(1,1,0.4,0.4)) +
   geom_pointrange(aes(ymin=X10., ymax=X90.,shape=both,alpha=both)) + coord_flip()  + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
@@ -939,14 +945,14 @@ theme(legend.title = element_blank()) + scale_x_discrete(labels=labels) + guides
 
 p2             
 
-# ggsave("./plots_tables/combined_forest.pdf", p2 , height=5,width=6)
-# ggsave("./plots_tables/combined_forest.png", p2 , height=5,width=6)
+ggsave("./plots_tables/combined_forest.pdf", p2 , height=5,width=6)
+ggsave("./plots_tables/combined_forest.png", p2 , height=5,width=6)
 
 
 ```
 
 
-```{r, fig.width=8, fig.height=8, eval=F, echo=F}
+```{r, fig.width=8, fig.height=8, eval=T, echo=F}
 # Phylogenetic effects plots (IUCN vetted full rarity model)
 
 # Combined plot - rarity
@@ -969,7 +975,7 @@ ranef_spec <- ranef_spec[tree_small$tip.label,]
 # Plot the beside the phylogeny
 cols <- c("#7570b3","#d95f02")
 
-# pdf("./plots_tables/phylo_rarity_barplot_combined.pdf", width=30, height=10)
+pdf("./plots_tables/phylo_rarity_barplot_combined.pdf", width=30, height=10)
 par(mfrow=c(1,3))
 
 # Brownian phylogenetic effects
@@ -996,7 +1002,7 @@ names(fam_effects) <- tree_small$tip.label
 
 plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
 
-# dev.off()
+dev.off()
 
 
 # Combined plot - naturalization
@@ -1019,7 +1025,7 @@ ranef_spec <- ranef_spec[tree_small$tip.label,]
 # Plot the beside the phylogeny
 cols <- c("#7570b3","#d95f02")
 
-# pdf("./plots_tables/phylo_naturalization_barplot_combined.pdf", width=30, height=10)
+pdf("./plots_tables/phylo_naturalization_barplot_combined.pdf", width=30, height=10)
 par(mfrow=c(1,3))
 
 # Brownian phylogenetic effects
@@ -1045,7 +1051,7 @@ names(fam_effects) <- tree_small$tip.label
 
 plotTree.wBars(tree_small,x=fam_effects,scale=20, type="fan", width=3.75, col=cols[ifelse(ranef_spec$Estimate.Intercept>0,1,2)], border=0)
 
-# dev.off()
+dev.off()
 
 
 ```
