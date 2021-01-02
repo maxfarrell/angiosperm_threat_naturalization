@@ -126,7 +126,7 @@ nrow(data[data$vetted>0,])#294
 
 ```
 
-```{r raw_data_plot, echo=F, eval=T}
+```{r raw_data_plot, echo=F, eval=F}
 
 require(ggtree)
 
