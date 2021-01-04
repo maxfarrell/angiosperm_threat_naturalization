@@ -121,12 +121,11 @@ tree <- drop.tip(tree, setdiff(tree$tip.label, as.character(data$family)))
 # phylogenetic correlation structure
 phy_cov <- vcv(tree, corr=TRUE)
 
-nrow(data)#352
-nrow(data[data$vetted>0,])#294
+# nrow(data)#352
+# nrow(data[data$vetted>0,])#294
 
 # instances where threatened is greater than vetted
-
-View(data[data$threatened>data$vetted,])
+# nrow(data[data$threatened>data$vetted,])#0
 
 
 ```
