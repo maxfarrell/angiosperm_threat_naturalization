@@ -124,6 +124,11 @@ phy_cov <- vcv(tree, corr=TRUE)
 nrow(data)#352
 nrow(data[data$vetted>0,])#294
 
+# instances where threatened is greater than vetted
+
+View(data[data$threatened>data$vetted,])
+
+
 ```
 
 ```{r raw_data_plot, echo=F, eval=F}
@@ -892,7 +897,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 
 
-```{r fig.width=6, fig.height=5, paper_forest_plots, eval=TRUE}
+```{r fig.width=6, fig.height=5, paper_forest_plots, eval=FALSE}
 
 # simplified threat model
 outcome <- summary(vet_threatened_nat$fit, prob=c(0.1,0.9))
