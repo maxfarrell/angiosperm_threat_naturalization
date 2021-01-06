@@ -127,6 +127,9 @@ phy_cov <- vcv(tree, corr=TRUE)
 # instances where threatened is greater than vetted
 # nrow(data[data$threatened>data$vetted,])#0
 
+# instances where threatened is greater than species
+# nrow(data[data$threatened>data$species,])#0
+
 
 ```
 
@@ -1311,9 +1314,9 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 ```
 
-## Invasive model
-
-```{r frac_inv, echo=TRUE, eval=TRUE}
+<!-- ## Invasive model
+ -->
+```{r frac_inv, echo=FALSE, eval=FALSE}
 
 if (!file.exists("./fit_inv_10k.rds")) {
 
