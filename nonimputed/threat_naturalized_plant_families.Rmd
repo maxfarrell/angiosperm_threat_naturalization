@@ -1115,7 +1115,7 @@ outcome <- summary(vet_threatened_nat_norange$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Number of naturalized species","Diversification rate","Family age","Range size", "SD brownian effects","SD family specific effects")
+names1 <- c("Number of naturalized species","Diversification rate","Family age", "SD brownian effects","SD family specific effects")
 
 vet_threatened_nat_norange_plot <- stanplot(vet_threatened_nat_norange, pars=rownames(to_print), type="intervals", 
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
