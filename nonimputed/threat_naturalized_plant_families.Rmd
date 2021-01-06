@@ -1088,6 +1088,76 @@ dev.off()
 
 # Sensitivity analyses
 
+## Simple threat model: without range size (custom priors)
+
+```{r threatened_nat_vetted_norange, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./vet_threatened_naturalized_norange_10k.rds")) {
+
+  vet_threatened_nat_norange <- brm(threatened | trials(vetted) ~ naturalized_scaled + diversification_scaled + age_scaled + (1|family) + (1|family_name), 
+    dat=data_vetted, family=binomial(),
+
+    # custom priors based on McElreath
+    prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1.5), class = b),
+                prior(normal(0, 1), class = sd)),
+
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
+    control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
+
+  saveRDS(vet_threatened_nat_norange, "./vet_threatened_naturalized_norange_10k.rds")
+
+} else { vet_threatened_nat_norange <- readRDS("./vet_threatened_naturalized_norange_10k.rds")}
+
+# prior_summary(vet_threatened_nat_norange, all=TRUE)
+
+outcome <- summary(vet_threatened_nat_norange$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+names1 <- c("Number of naturalized species","Diversification rate","Family age","Range size", "SD brownian effects","SD family specific effects")
+
+vet_threatened_nat_norange_plot <- stanplot(vet_threatened_nat_norange, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))
+
+vet_threatened_nat_norange_plot
+
+# pdf("./plots_tables/vet_threatened_nat_norange_plot.pdf", width=5, height=4)
+# vet_threatened_nat_norange_plot + ggtitle("")
+# dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_threatened_nat_norange.tex")
+
+##Posterior predictive checks
+pp_vet_threatened_nat_norange <- brms::posterior_predict(vet_threatened_nat_norange)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=vet_threatened_nat_norange$data$threatened, pp_vet_threatened_nat_norange[1:50, ]) + scale_x_continuous(trans="log1p")
+
+
+# NRMSE
+nrmse_vet_threatened_nat_norange <- apply(pp_vet_threatened_nat_norange, 1, function(x) nrmse(pred=x,obs=vet_threatened_nat_norange$data$threatened, type="iq"))
+mean(nrmse_vet_threatened_nat_norange)
+sd(nrmse_vet_threatened_nat_norange)
+
+# RMSE
+rmse_vet_threatened_nat_norange <- apply(pp_vet_threatened_nat_norange, 1, function(x) rmse(pred=x,obs=vet_threatened_nat_norange$data$threatened))
+mean(rmse_vet_threatened_nat_norange)
+sd(rmse_vet_threatened_nat_norange)
+
+
+# family-level variance due to brownian motion component
+hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
+(hyp <- hypothesis(vet_threatened_nat_norange, hyp, class = NULL))
+
+```
+
+
+
 ## Full threat model: no family level effects
 
 ```{r frac_threatened_nofam, echo=TRUE, eval=TRUE}
