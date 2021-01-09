@@ -1038,7 +1038,7 @@ ggsave("./plots_tables/combined_forest.png", p2 , height=5,width=6)
 ```
 
 
-```{r, fig.width=8, fig.height=8, eval=T, echo=F}
+```{r, fig.width=8, fig.height=8, eval=F, echo=F}
 # Phylogenetic effects plots (IUCN vetted full threat model)
 
 # Combined plot - threat
