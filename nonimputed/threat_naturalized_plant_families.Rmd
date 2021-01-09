@@ -74,7 +74,7 @@ data <- read.csv("./sp.threat.nat.csv", as.is=F)
 
 nrow(data)# 352
 range(data$vetted)# 0-3468
-nrow(data[data$vetted>0,])# 294
+nrow(data[data$vetted>0,])# 290
 
 ### Magellon tree
 tree <- read.tree("./Magellon_etal_PL_ML_pruned.tre")
@@ -100,14 +100,57 @@ ages %<>% arrange(family)
 data <- left_join(data,ages)
 
 # Calculating simple diversification metric - log(N+1)/age
-data$diversification <- with(data, log(species)/age)
+data$div_simple <- with(data, log(species)/age)
+
+## Calculating Methods of Moments diversification
+# https://bio.libretexts.org/Bookshelves/Evolutionary_Developmental_Biology/Book%3A_Phylogenetic_Comparative_Methods_(Harmon)/11%3A_Fitting_Birth-Death_Models/11.02%3A_Clade_Age_and_Diversity
+
+#extract family stem ages
+ages<-NULL
+for (x in 1: length(tree$tip.label)){
+sp<-tree$tip.label[x]
+edge<-tree$edge.length[tree$edge[,2]==x]
+ages<-rbind(ages,(data.frame(sp,edge)))
+}
+
+data.rates <- merge(data, ages,by.x="family", by.y = "sp")
+#eugh my numerics edge lengths have been converted to factors
+data.rates$edge<-as.numeric(as.character(data.rates$edge))
+
+#sanity check
+# head(ages[order(ages$sp),])
+# head(data.rates)
+
+
+#Calculate rates assuming different extinction fractions (e)
+e<-0
+r0<-log(data.rates$species*(1-e)+e)/data.rates$edge
+
+e<-0.5
+r0.5<-log(data.rates$species*(1-e)+e)/data.rates$edge
+
+e<-0.9
+r0.9<-log(data.rates$species*(1-e)+e)/data.rates$edge
+
+#just for a quick look-see
+# plot(r0, r0.9)
+
+data<-cbind(data.rates, r0, r0.5, r0.9)
+pairs(data[,c("r0","r0.5","r0.9")])
+
+data$div_mom <- data$r0.9
+
+with(data, plot(div_simple, div_mom))
+with(data, cor(div_simple, div_mom))#0.981
+
+# Setting diversification as div_simple
+data$diversification <- data$div_simple
 
 # creating another family level variable (for non-phylogenetic family level effects)
 data$family_name <- data$family
 
 # These families we have data for, but are not in tree
 setdiff(data$family, tree$tip.label) 
-# none
 
 # Identify families in tree with no data
 setdiff(tree$tip.label, data$family)
@@ -121,15 +164,14 @@ tree <- drop.tip(tree, setdiff(tree$tip.label, as.character(data$family)))
 # phylogenetic correlation structure
 phy_cov <- vcv(tree, corr=TRUE)
 
-# nrow(data)#352
-# nrow(data[data$vetted>0,])#294
+nrow(data)#354
+nrow(data[data$vetted>0,])#292
 
 # instances where threatened is greater than vetted
 # nrow(data[data$threatened>data$vetted,])#0
 
 # instances where threatened is greater than species
 # nrow(data[data$threatened>data$species,])#0
-
 
 ```
 
@@ -180,9 +222,9 @@ d <- rbind(td, nd)
 d$node <- as.numeric(d$node)
 
 p <- ggtree(p_tree, aes(color=d$trait), layout = 'rectangular', 
-        ladderize = FALSE, size=0.4) + theme_tree2(legend.position = c(.08, .85),legend.title=element_text(size=8),strip.background =element_rect(fill="white"),panel.border = element_rect(colour = "white")) +
-      scale_colour_viridis_c(direction=-1, name="Diversification rate")
-# p
+        ladderize = FALSE, size=0.45) + theme_tree2(legend.position = c(.01, .18),legend.title=element_text(size=8),strip.background =element_rect(fill="white"),panel.border = element_rect(colour = "white")) +
+      scale_colour_viridis_c(direction=-1, name="Diversification \nrate")
+p
 
 d2 <- data.frame(id=p_tree$tip.label,threat,nat)
 
@@ -203,7 +245,23 @@ p3 <- facet_plot(p2, panel = 'Proportion naturalized', data = d2,
                 color=cols[1],fill=cols[1], width=0.03) #+ scale_x_reverse()
 
 p3
-ggsave("./plots_tables/div_threatVetted_nat_plot_2.pdf",p3, height=6,width=8)
+# ggsave("./plots_tables/div_threatVetted_nat_plot_2.pdf",p3, height=8,width=8)
+
+# load the packaged
+library(grid)
+library(gtable)
+
+gt = ggplot_gtable(ggplot_build(p3))
+gtable_show_layout(gt) # will show you the layout - very handy function
+gt # see plot layout in table format
+gt$layout$l[grep('panel-1', gt$layout$name)] # you want to find the column specific to panel-1
+gt$widths[5] = 2*gt$widths[5] # in this case it was colmun 5 - multiply the width by a half
+grid.draw(gt) # plot with grid draw
+
+
+gt$widths[1] = 8*gt$widths[1] #add some white space in front of tree
+ggsave("./plots_tables/div_threatVetted_nat_plot_2.pdf",grid.draw(gt), height=7,width=8.5)
+
 
 # p4 <- p3 + facet_grid(.~panel, scale="free_x") + scale_y_continuous(expand = c(0,3)) + scale_x_continuous(expand = c(0,0.04))
 # p4
@@ -231,6 +289,7 @@ data$hybrids <- data$hybrids/data$species
 data$age_scaled <- scale_half(log(data$age))
 data$species_scaled <- scale_half(log(data$species))
 data$diversification_scaled <- scale_half(log(data$diversification+1))
+data$diversification_mom_scaled <- scale_half(log(data$div_mom+1))
 data$naturalized_scaled <- scale_half(log(data$naturalized+1))
 data$threatened_scaled <- scale_half(log(data$threatened+1))
 
@@ -378,9 +437,9 @@ vet_threatened_nat_plot <- stanplot(vet_threatened_nat, pars=rownames(to_print),
 
 vet_threatened_nat_plot
 
-# pdf("./plots_tables/vet_threatened_nat_plot.pdf", width=5, height=4)
-# vet_threatened_nat_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_nat_plot.pdf", width=5, height=4)
+vet_threatened_nat_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -409,6 +468,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 (hyp <- hypothesis(vet_threatened_nat, hyp, class = NULL))
 
 ```
+
 
 ## Simple threat model - prior / posterior plots
 
@@ -500,9 +560,9 @@ vet_threatened_nat_p2_plot <- stanplot(vet_threatened_nat_p2, pars=rownames(to_p
 
 vet_threatened_nat_p2_plot
 
-# pdf("./plots_tables/vet_threatened_nat_p2_plot.pdf", width=5, height=4)
-# vet_threatened_nat_p2_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_nat_p2_plot.pdf", width=5, height=4)
+vet_threatened_nat_p2_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -624,9 +684,9 @@ vet_threatened_plot <- stanplot(vet_threatened, pars=rownames(to_print), type="i
 
 vet_threatened_plot
 
-# pdf("./plots_tables/vet_threatened_plot.pdf", width=5, height=4)
-# vet_threatened_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_plot.pdf", width=5, height=4)
+vet_threatened_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -750,9 +810,9 @@ vet_threatened_p2_plot <- stanplot(vet_threatened_p2, pars=rownames(to_print), t
 
 vet_threatened_p2_plot
 
-# pdf("./plots_tables/vet_threatened_p2_plot.pdf", width=5, height=4)
-# vet_threatened_p2_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_p2_plot.pdf", width=5, height=4)
+vet_threatened_p2_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -864,9 +924,9 @@ fit_nat_plot <- stanplot(fit_nat, pars=rownames(to_print), type="intervals",
 
 fit_nat_plot
 
-# pdf("./plots_tables/fit_nat_plot.pdf", width=5, height=4)
-# fit_nat_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/fit_nat_plot.pdf", width=5, height=4)
+fit_nat_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -899,7 +959,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 
 
-```{r fig.width=6, fig.height=5, paper_forest_plots, eval=FALSE}
+```{r fig.width=6, fig.height=5, paper_forest_plots, eval=TRUE}
 
 # simplified threat model
 outcome <- summary(vet_threatened_nat$fit, prob=c(0.1,0.9))
@@ -945,18 +1005,16 @@ nat_out$variable <- labels
 
 coefs <- rbind(threat_out, nat_out)
 
-coefs$overlap <- c( "n","n","n","n","y",
-                    "n","n","y","y","n","n",
+coefs$overlap <- ((coefs$X10. > 0) == (coefs$X90. > 0))
+coefs$overlap[coefs$overlap==TRUE] <- "n"
+coefs$overlap[coefs$overlap==FALSE] <- "y"
 
-                    "n","n","n","n","y",
-                    "n","n","n","n","n","n")
 
-coefs$opposite <- c(
-                    "y","y","y","y","n",
-                    "y","y","y","n","n","n",
-
-                    "y","y","y","y","n",
-                    "y","y","y","n","n","n")
+top <- coefs$mean[1:(length(coefs$mean)/2)]
+bottom <- coefs$mean[((length(coefs$mean)/2)+1):length(coefs$mean)]
+coefs$opposite <- ((top > 0) == (bottom > 0))
+coefs$opposite[coefs$opposite==TRUE] <- "n"
+coefs$opposite[coefs$opposite==FALSE] <- "y"
 
 coefs$both <- paste0(coefs$overlap,coefs$opposite)
 
@@ -980,7 +1038,7 @@ ggsave("./plots_tables/combined_forest.png", p2 , height=5,width=6)
 ```
 
 
-```{r, fig.width=8, fig.height=8, eval=F, echo=F}
+```{r, fig.width=8, fig.height=8, eval=T, echo=F}
 # Phylogenetic effects plots (IUCN vetted full threat model)
 
 # Combined plot - threat
@@ -1122,9 +1180,9 @@ vet_threatened_nat_norange_plot <- stanplot(vet_threatened_nat_norange, pars=row
 
 vet_threatened_nat_norange_plot
 
-# pdf("./plots_tables/vet_threatened_nat_norange_plot.pdf", width=5, height=4)
-# vet_threatened_nat_norange_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_nat_norange_plot.pdf", width=5, height=4)
+vet_threatened_nat_norange_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -1184,9 +1242,9 @@ vet_threatened_nofam_plot <- stanplot(vet_threatened_nofam, pars=rownames(to_pri
 
 vet_threatened_nofam_plot
 
-# pdf("./plots_tables/vet_threatened_nofam_plot.pdf", width=5, height=4)
-# vet_threatened_nofam_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_nofam_plot.pdf", width=5, height=4)
+vet_threatened_nofam_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -1241,9 +1299,9 @@ vet_threatened_nophylo_plot <- stanplot(vet_threatened_nophylo, pars=rownames(to
 
 vet_threatened_nophylo_plot
 
-# pdf("./plots_tables/vet_threatened_nophylo_plot.pdf", width=5, height=4)
-# vet_threatened_nophylo_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_nophylo_plot.pdf", width=5, height=4)
+vet_threatened_nophylo_plot + ggtitle("")
+dev.off()
 
 
 rownames(to_print) <- names1
@@ -1297,9 +1355,9 @@ vet_threatened_phylo_plot <- stanplot(vet_threatened_phylo, pars=rownames(to_pri
 
 vet_threatened_phylo_plot
 
-# pdf("./plots_tables/vet_threatened_phylo_plot.pdf", width=5, height=4)
-# vet_threatened_phylo_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_phylo_plot.pdf", width=5, height=4)
+vet_threatened_phylo_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -1352,9 +1410,9 @@ nonvet_threatened_plot <- stanplot(nonvet_threatened, pars=rownames(to_print), t
                     prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
 nonvet_threatened_plot
 
-# pdf("./plots_tables/nonvet_threatened_plot.pdf", width=5, height=4)
-# nonvet_threatened_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/nonvet_threatened_plot.pdf", width=5, height=4)
+nonvet_threatened_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
@@ -1384,60 +1442,139 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 ```
 
-<!-- ## Invasive model
- -->
-```{r frac_inv, echo=FALSE, eval=FALSE}
 
-if (!file.exists("./fit_inv_10k.rds")) {
 
-  fit_inv <- brm(invasive | trials(species) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
-    iter=10000, thin=4, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=11))
 
-  saveRDS(fit_inv, "./fit_inv_10k.rds")
+# Sensitivity analyses with MOM diversification estimator
 
-} else { fit_inv <- readRDS("./fit_inv_10k.rds")}
 
-outcome <- summary(fit_inv$fit)
+## Full threat model (IUCN vetted species) - MOM
+
+```{r frac_threatened_MOM, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./vet_threatened_MOM_10k.rds")) {
+
+  vet_threatened_MOM <- brm(threatened | trials(vetted) ~ diversification_MOM_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
+
+    # custom priors based on McElreath
+    prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1.5), class = b),
+                prior(normal(0, 1), class = sd)),
+
+    dat=data_vetted, family=binomial(), 
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
+    control=list(adapt_delta=0.98,max_treedepth=13))
+
+  # no divergent transitions
+
+  saveRDS(vet_threatened_MOM, "./vet_threatened_MOM_10k.rds")
+
+} else { vet_threatened_MOM <- readRDS("./vet_threatened_MOM_10k.rds")}
+
+# prior_summary(vet_threatened_MOM, all=FALSE)
+
+outcome <- summary(vet_threatened_MOM$fit)
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 
-names1 <- c("Diversification rate","Famly age", "Range size", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
+names1 <- c("Diversification rate (MOM)","Famly age", "Range size", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
 
-fit_inv_plot <- stanplot(fit_inv, pars=rownames(to_print), type="intervals", 
-                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of invasive species")
+vet_threatened_MOM_plot <- stanplot(vet_threatened_MOM, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
 
-fit_inv_plot
+vet_threatened_MOM_plot
 
-# pdf("./plots_tables/fit_inv_plot.pdf", width=5, height=4)
-# fit_inv_plot + ggtitle("")
-# dev.off()
+pdf("./plots_tables/vet_threatened_MOM_plot.pdf", width=5, height=4)
+vet_threatened_MOM_plot + ggtitle("")
+dev.off()
 
 rownames(to_print) <- names1
 kable(to_print, digits=2)
 to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
-print(xtable(to_print, type = "latex"), file = "./plots_tables/invasive.tex")
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_threatened_MOM.tex")
 
 ##Posterior predictive checks
-pp_inv <- brms::posterior_predict(fit_inv)
+# first make posterior predictions
+pp_threatened <- brms::posterior_predict(vet_threatened_MOM)
 
 log1 <- scale_x_continuous(trans="log1p")
 
-ppc_dens_overlay(y=fit_inv$data$invasive, pp_inv[1:50, ]) + scale_x_continuous(trans="log1p")
+ppc_dens_overlay(y=vet_threatened_MOM$data$threatened, pp_threatened[1:50, ]) + scale_x_continuous(trans="log1p")
 
 # NRMSE
-nrmse_inv <- apply(pp_inv, 1, function(x) nrmse(pred=x,obs=fit_inv$data$invasive, type="iq"))
-mean(nrmse_inv)
-sd(nrmse_inv)
+nrmse_vet <- apply(pp_threatened, 1, function(x) nrmse(pred=x,obs=vet_threatened_MOM$data$threatened, type="iq"))
+mean(nrmse_vet)
+sd(nrmse_vet)
 
 # RMSE
-rmse_inv <- apply(pp_inv, 1, function(x) rmse(pred=x,obs=fit_inv$data$invasive))
-mean(rmse_inv)
-sd(rmse_inv)
+rmse_vet <- apply(pp_threatened, 1, function(x) rmse(pred=x,obs=vet_threatened_MOM$data$threatened))
+mean(rmse_vet)
+sd(rmse_vet)
 
 # family-level variance due to brownian motion component
 hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
-(hyp <- hypothesis(fit_inv, hyp, class = NULL))
+(hyp <- hypothesis(vet_threatened_MOM, hyp, class = NULL))
+# plot(hyp)
+```
+
+
+
+## Naturalized model - MOM
+
+```{r frac_nat_MOM, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./fit_nat_MOM_10k.rds")) {
+
+  fit_nat_MOM <- brm(naturalized | trials(species) ~ diversification_MOM_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
+    dat=data, family=binomial(), 
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.8, max_treedepth=11))
+
+  saveRDS(fit_nat_MOM, "./fit_nat_MOM_10k.rds")
+
+} else { fit_nat_MOM <- readRDS("./fit_nat_MOM_10k.rds")}
+
+outcome <- summary(fit_nat_MOM$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+names1 <- c("Diversification rate (MOM)","Famly age", "Range size", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","SD brownian effects","SD family specific effects")
+
+fit_nat_MOM_plot <- stanplot(fit_nat_MOM, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of naturalized species")
+
+fit_nat_MOM_plot
+
+pdf("./plots_tables/fit_nat_MOM_plot.pdf", width=5, height=4)
+fit_nat_MOM_plot + ggtitle("")
+dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/fit_nat_MOM.tex")
+
+##Posterior predictive checks
+pp_nat <- brms::posterior_predict(fit_nat_MOM)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=fit_nat_MOM$data$naturalized, pp_nat[1:50, ]) + scale_x_continuous(trans="log1p")
+
+# NRMSE
+nrmse_nat <- apply(pp_nat, 1, function(x) nrmse(pred=x,obs=fit_nat_MOM$data$naturalized, type="iq"))
+mean(nrmse_nat)
+sd(nrmse_nat)
+
+# RMSE
+rmse_nat <- apply(pp_nat, 1, function(x) rmse(pred=x,obs=fit_nat_MOM$data$naturalized))
+mean(rmse_nat)
+sd(rmse_nat)
+
+# family-level variance due to brownian motion component
+hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
+(hyp <- hypothesis(fit_nat_MOM, hyp, class = NULL))
+
 
 ```
+

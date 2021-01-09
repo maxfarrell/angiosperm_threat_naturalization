@@ -1,0 +1,300 @@
+---
+title: "Naturalization models - comparison with Lenzner et al. 2020"
+author: "Maxwell J. Farrell"
+date: "`r format(Sys.time(), '%B %d %Y')`"
+output: 
+  html_document:
+    highlight: default
+    toc: yes
+    toc_depth: 3
+    toc_float: true
+    theme: yeti
+urlcolor: blue
+---
+
+<!-- knit with 
+Rscript -e "rmarkdown::render('threat_naturalized_plant_families.Rmd')"  
+ -->
+
+
+<!-- 
+
+To Do:
+
+- Add JD code to calculate MOM using the whole tree (need to )
+
+- predicting naturalization (a la lezner)
+    - try naturalization with just MOM diversification rate + range size
+    - then try removing families with less than 50 species (still minimal model)
+
+- use MOM estimator for all models (if not correllated)
+
+
+
+ -->
+
+
+# Set up
+
+## Packages 
+
+```{r loading packages, echo=T, message=F, warning=F}
+require(tidyr)
+require(dplyr)
+require(magrittr)
+require(ggplot2)
+require(bayesplot)
+require(ape)
+require(rstan)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+require(brms)
+require(ggmcmc)
+require(knitr)
+require(phytools)
+require(cowplot)
+require(RColorBrewer)
+require(ggtree)
+require(car)
+require(xtable)
+require(phytools)
+
+```
+
+## Loading data
+
+```{r loading data, echo=T, message=F, warning=F, results='hide'}
+
+data <- read.csv("./sp.threat.nat.csv", as.is=F)
+
+nrow(data)# 352
+range(data$vetted)# 0-3468
+nrow(data[data$vetted>0,])# 290
+
+### Magellon tree
+tree <- read.tree("./Magellon_etal_PL_ML_pruned.tre")
+
+# Getting new family age
+min_above_zero <- function(x){
+
+  if (length(x)>1) {
+    min(x[x>0])
+  } else {0}
+
+}
+
+# Calculate family age
+coph <- cophenetic(tree)
+
+fam_age <- sapply(rownames(coph), function(fam) 
+          min_above_zero(coph[rownames(coph)%in%fam,])
+          ) 
+
+ages <- data.frame(family=names(fam_age), age=as.numeric(fam_age)/2)
+ages %<>% arrange(family)
+data <- left_join(data,ages)
+
+# Calculating simple diversification metric - log(N+1)/age
+data$div_simple <- with(data, log(species)/age)
+
+## Calculating Methods of Moments diversification
+# https://bio.libretexts.org/Bookshelves/Evolutionary_Developmental_Biology/Book%3A_Phylogenetic_Comparative_Methods_(Harmon)/11%3A_Fitting_Birth-Death_Models/11.02%3A_Clade_Age_and_Diversity
+
+#extract family stem ages
+ages<-NULL
+for (x in 1: length(tree$tip.label)){
+sp<-tree$tip.label[x]
+edge<-tree$edge.length[tree$edge[,2]==x]
+ages<-rbind(ages,(data.frame(sp,edge)))
+}
+
+data.rates <- merge(data, ages,by.x="family", by.y = "sp")
+#eugh my numerics edge lengths have been converted to factors
+data.rates$edge<-as.numeric(as.character(data.rates$edge))
+
+#sanity check
+# head(ages[order(ages$sp),])
+# head(data.rates)
+
+
+#Calculate rates assuming different extinction fractions (e)
+e<-0
+r0<-log(data.rates$species*(1-e)+e)/data.rates$edge
+
+e<-0.5
+r0.5<-log(data.rates$species*(1-e)+e)/data.rates$edge
+
+e<-0.9
+r0.9<-log(data.rates$species*(1-e)+e)/data.rates$edge
+
+#just for a quick look-see
+# plot(r0, r0.9)
+
+data<-cbind(data.rates, r0, r0.5, r0.9)
+pairs(data[,c("r0","r0.5","r0.9")])
+
+
+# creating another family level variable (for non-phylogenetic family level effects)
+data$family_name <- data$family
+
+# These families we have data for, but are not in tree
+setdiff(data$family, tree$tip.label) 
+
+# Identify families in tree with no data
+setdiff(tree$tip.label, data$family)
+
+# remove any missing families in data
+data <- data[data$family%in%tree$tip.label,]
+
+# remove any families in tree with no data 
+tree <- drop.tip(tree, setdiff(tree$tip.label, as.character(data$family)))
+
+# phylogenetic correlation structure
+phy_cov <- vcv(tree, corr=TRUE)
+
+nrow(data)#354
+nrow(data[data$vetted>0,])#292
+
+# instances where threatened is greater than vetted
+# nrow(data[data$threatened>data$vetted,])#0
+
+# instances where threatened is greater than species
+# nrow(data[data$threatened>data$species,])#0
+
+```
+
+
+## Transforming predictors
+
+```{r transforming predictors}
+
+# Code for scale and unscale with mean=0 sd=0.5 (following Gelman 2008)
+scale_half <- function(x){
+  return( (x-mean(x)) * 0.5/sd(x))
+}
+
+unscale_half <- function(x,original){
+    x*sd(original)*2 + mean(original)  
+}
+
+
+data$div_simple_scaled <- scale_half(log(data$div_simple+1))
+data$div_mom_scaled <- scale_half(log(data$r0.9+1)) #using e=0.9 to compare with Lenzner et al 
+data$range.size <- scale_half(sqrt(data$range.size))
+
+# Subsetting to IUCN vetted species (for threat models)
+data_vetted <- data[data$vetted>0,]
+tree_vetted <- drop.tip(tree, setdiff(tree$tip.label, as.character(data_vetted$family)))
+phy_cov_vetted <- vcv(tree_vetted, corr=TRUE)
+
+```
+
+
+## Assessing multicollinearity
+
+```{r vifs}
+
+with(data, plot(div_simple_scaled, div_mom_scaled))
+with(data, cor(div_simple_scaled, div_mom_scaled))#0.984
+
+vif(lm(naturalized ~ div_mom_scaled + range.size, data=data))
+
+```
+
+
+# Binomial models
+
+## Simple naturalized model
+  
+```{r nat_1, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./nat_1_4k.rds")) {
+
+  nat_1 <- brm(naturalized | trials(species) ~ div_mom_scaled + range.size + (1|family), 
+    data=data, family=binomial(),
+
+    # custom priors based on McElreath
+    prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1.5), class = b),
+                prior(normal(0, 1), class = sd)),
+
+    iter=4000, thin=4, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.9,max_treedepth=10), cores=4)
+
+  saveRDS(nat_1, "./nat_1_4k.rds")
+
+} else { nat_1 <- readRDS("./nat_1_4k.rds")}
+
+
+nat_1
+
+```
+
+
+## Removing families with less than 50 species
+  
+```{r nat_2, echo=TRUE, eval=TRUE}
+
+data_small <- data[data$species>=50,]
+tree_small <- drop.tip(tree, setdiff(tree$tip.label, as.character(data_small$family)))
+phy_cov_small <- vcv(tree_small, corr=TRUE)
+
+if (!file.exists("./nat_2_4k.rds")) {
+
+  nat_2 <- brm(naturalized | trials(species) ~ div_mom_scaled + range.size + (1|family), 
+    data=data_small, family=binomial(),
+
+    # custom priors based on McElreath
+    prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1.5), class = b),
+                prior(normal(0, 1), class = sd)),
+
+    iter=4000, thin=4, cov_ranef = list(family = phy_cov_small),
+    control=list(adapt_delta=0.9,max_treedepth=10), cores=4)
+
+  saveRDS(nat_2, "./nat_2_4k.rds")
+
+} else { nat_2 <- readRDS("./nat_2_4k.rds")}
+
+
+nat_2
+
+```
+
+
+
+
+# Gaussian models (a la Lenzner)
+
+From Lenzner et al 2020:
+
+"We used naturalization success per plant family as the response variable in our data set. This measure was derived by calculating the proportion of naturalized species per family based on GloNAF to the overall number of species per family based on The Plant List. The proportion was then multiplied by the number of regions where each species of the family is naturalized in to characterize invasion success by both the number of species that have successfully naturalized in at least one region and the total size of the area colonized by these species."
+
+"Models followed a Gaussian error distribution"
+
+## Simple naturalized model (Gaussian for proportional response)
+  
+```{r nat_3, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./nat_gauss_1_4k.rds")) {
+
+  nat_gauss_1 <- brm(naturalized/species ~ div_mom_scaled + range.size + (1|family), 
+    data=data, family=gaussian(),
+
+    # using brms default priors
+
+    iter=4000, thin=4, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.9,max_treedepth=10), cores=4)
+
+  saveRDS(nat_gauss_1, "./nat_gauss_1_4k.rds")
+
+} else { nat_gauss_1 <- readRDS("./nat_gauss_1_4k.rds")}
+
+
+nat_gauss_1
+
+
+```
+
+Gaussian error distribution gives mutliple divergent transitions - likely because of incorrect error distribution.
+
