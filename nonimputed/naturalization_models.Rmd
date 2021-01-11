@@ -67,12 +67,12 @@ require(phytools)
 
 data <- read.csv("./sp.threat.nat.csv", as.is=F)
 
-nrow(data)# 352
-range(data$vetted)# 0-3468
-nrow(data[data$vetted>0,])# 290
+nrow(data)# 404
+range(data$vetted)# 0-3346
+nrow(data[data$vetted>0,])# 320
 
 ### Magellon tree
-tree <- read.tree("./Magellon_etal_PL_ML_pruned.tre")
+tree <- read.tree("./Ramirez_etal_pruned.tre")
 
 # Getting new family age
 min_above_zero <- function(x){
@@ -152,8 +152,8 @@ tree <- drop.tip(tree, setdiff(tree$tip.label, as.character(data$family)))
 # phylogenetic correlation structure
 phy_cov <- vcv(tree, corr=TRUE)
 
-nrow(data)#354
-nrow(data[data$vetted>0,])#292
+nrow(data)#395
+nrow(data[data$vetted>0,])#317
 
 # instances where threatened is greater than vetted
 # nrow(data[data$threatened>data$vetted,])#0
