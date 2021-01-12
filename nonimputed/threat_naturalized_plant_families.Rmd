@@ -72,14 +72,19 @@ inv_logit <- function(x) {exp(x)/(1+exp(x))}
 
 data <- read.csv("./sp.threat.nat.csv", as.is=F)
 
-nrow(data)# 352
-range(data$vetted)# 0-3468
-nrow(data[data$vetted>0,])# 290
+nrow(data)# 404
+range(data$vetted)# 0-3346
+nrow(data[data$vetted>0,])# 320
 
 ### Magellon tree
-tree <- read.tree("./Magellon_etal_PL_ML_pruned.tre")
+tree <- read.tree("./Ramirez_etal_pruned.tre")
 
-# Getting new family age
+length(tree$tip.label)# 442
+
+# These families we have data for, but are not in tree
+setdiff(data$family, tree$tip.label) 
+
+# Getting family age
 min_above_zero <- function(x){
 
   if (length(x)>1) {
@@ -102,7 +107,7 @@ data <- left_join(data,ages)
 # Calculating simple diversification metric - log(N+1)/age
 data$div_simple <- with(data, log(species)/age)
 
-## Calculating Methods of Moments diversification
+## Calculating Method of Moments diversification
 # https://bio.libretexts.org/Bookshelves/Evolutionary_Developmental_Biology/Book%3A_Phylogenetic_Comparative_Methods_(Harmon)/11%3A_Fitting_Birth-Death_Models/11.02%3A_Clade_Age_and_Diversity
 
 #extract family stem ages
@@ -121,6 +126,7 @@ data.rates$edge<-as.numeric(as.character(data.rates$edge))
 # head(ages[order(ages$sp),])
 # head(data.rates)
 
+ages[ages$edge==max(ages$edge),]
 
 #Calculate rates assuming different extinction fractions (e)
 e<-0
@@ -138,10 +144,12 @@ r0.9<-log(data.rates$species*(1-e)+e)/data.rates$edge
 data<-cbind(data.rates, r0, r0.5, r0.9)
 pairs(data[,c("r0","r0.5","r0.9")])
 
+unique(data[data$div_simple==max(data$div_simple),])
+
 data$div_mom <- data$r0.9
 
 with(data, plot(div_simple, div_mom))
-with(data, cor(div_simple, div_mom))#0.981
+with(data, cor(div_simple, div_mom))#0.974
 
 # Setting diversification as div_simple
 data$diversification <- data$div_simple
@@ -164,8 +172,8 @@ tree <- drop.tip(tree, setdiff(tree$tip.label, as.character(data$family)))
 # phylogenetic correlation structure
 phy_cov <- vcv(tree, corr=TRUE)
 
-nrow(data)#354
-nrow(data[data$vetted>0,])#292
+nrow(data)#395
+nrow(data[data$vetted>0,])#317
 
 # instances where threatened is greater than vetted
 # nrow(data[data$threatened>data$vetted,])#0
@@ -175,7 +183,7 @@ nrow(data[data$vetted>0,])#292
 
 ```
 
-```{r raw_data_plot, echo=F, eval=F}
+```{r raw_data_plot, echo=F, eval=T}
 
 require(ggtree)
 
@@ -197,6 +205,8 @@ names(threat) <- p_tree$tip.label
 threat <- threat[!is.nan(threat)]
 # remove these from dat
 dat <- dat[dat$family %in% names(threat),]
+
+# dim(dat)
 
 # naturalization
 nat <- dat$naturalized/dat$species
@@ -229,6 +239,8 @@ p
 d2 <- data.frame(id=p_tree$tip.label,threat,nat)
 
 p <- p %<+% d2
+ggsave("./plots_tables/tree_div_plot.pdf",p, height=8,width=4)
+
 
 p2 <- facet_plot(p, panel = 'Proportion threatened', data = d2, 
                 geom = ggstance::geom_barh, 
@@ -292,6 +304,7 @@ data$diversification_scaled <- scale_half(log(data$diversification+1))
 data$diversification_mom_scaled <- scale_half(log(data$div_mom+1))
 data$naturalized_scaled <- scale_half(log(data$naturalized+1))
 data$threatened_scaled <- scale_half(log(data$threatened+1))
+data$hort.species <- scale_half(log(data$hort.species+1))
 
 data$hybrids <- scale_half(data$hybrids)
 data$range.size <- scale_half(sqrt(data$range.size))
@@ -327,21 +340,21 @@ BTW, threatened includes “extinct”, “threatened”,”vulnerable”, but n
 
 vif(lm(threatened ~ naturalized_scaled + diversification_scaled + age_scaled + range.size, data=data_vetted))
 
-vif(lm(threatened ~ diversification_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size, data=data_vetted))
+vif(lm(threatened ~ diversification_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size + hort.species, data=data_vetted))
 
-vif(lm(naturalized ~ threatened_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size, data=data_vetted))
+vif(lm(naturalized ~ threatened_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size + hort.species, data=data_vetted))
 
 with(data_vetted, cor(diversification_scaled, range.size))
 
 
 # full dataset
-vif(lm(threatened ~ diversification_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size, data=data))
+vif(lm(threatened ~ diversification_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size + hort.species, data=data))
 
-vif(lm(naturalized ~ diversification_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size, data=data))
+vif(lm(naturalized ~ diversification_scaled + age_scaled +  hybrids + climate.sum + animal + asexual + annual + fleshy.fruit + herbaceous + range.size + hort.species, data=data))
 
 
 with(data, plot(diversification_scaled ~ range.size))
-with(data, cor(diversification_scaled, range.size))
+with(data, cor(diversification_scaled, range.size))#0.726
 
 
 ```
@@ -797,6 +810,7 @@ if (!file.exists("./vet_threatened_p2_10k.rds")) {
 
 } else { vet_threatened_p2 <- readRDS("./vet_threatened_p2_10k.rds")}
 
+summary(vet_threatened_p2)
 # prior_summary(vet_threatened_p2, all=FALSE)
 
 outcome <- summary(vet_threatened_p2$fit)
@@ -962,7 +976,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 ```{r fig.width=6, fig.height=5, paper_forest_plots, eval=TRUE}
 
 # simplified threat model
-outcome <- summary(vet_threatened_nat$fit, prob=c(0.1,0.9))
+outcome <- summary(vet_threatened_nat$fit, prob=c(0.05,0.95))
 to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
 to_print <- to_print[-1,]
 to_print <- data.frame(to_print)
@@ -972,7 +986,7 @@ to_print$variable <- as.factor(names1)
 
 
 p <-  ggplot(to_print, aes(x=variable, y=mean)) + scale_x_discrete(limits = rev(    levels(to_print$variable))) +
-      geom_pointrange(aes(ymin=X10., ymax=X90.)) + coord_flip()  + 
+      geom_pointrange(aes(ymin=X5., ymax=X95.)) + coord_flip()  + 
       theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
       geom_hline(yintercept = 0) + xlab("") + ylab("") +
@@ -984,14 +998,14 @@ ggsave("./plots_tables/threat_nat_forest.png", p , height=3,width=6)
 
 
 # combined Threat and Naturalized
-threat_out <- summary(vet_threatened$fit, prob=c(0.1,0.9))
+threat_out <- summary(vet_threatened$fit, prob=c(0.05,0.95))
 threat_out <- threat_out$summary[grep("^[sd,b]_*",rownames(threat_out$summary)),]
 threat_out <- threat_out[-1,]
 threat_out <- data.frame(threat_out)
 threat_out$group <- rev(letters[1:nrow(threat_out)])
 threat_out$model <- "Threatened"
 
-nat_out <- summary(fit_nat$fit, prob=c(0.1,0.9))
+nat_out <- summary(fit_nat$fit, prob=c(0.05,0.95))
 nat_out <- nat_out$summary[grep("^[sd,b]_*",rownames(nat_out$summary)),]
 nat_out <- nat_out[-1,]
 nat_out <- data.frame(nat_out)
@@ -1005,7 +1019,7 @@ nat_out$variable <- labels
 
 coefs <- rbind(threat_out, nat_out)
 
-coefs$overlap <- ((coefs$X10. > 0) == (coefs$X90. > 0))
+coefs$overlap <- ((coefs$X5. > 0) == (coefs$X95. > 0))
 coefs$overlap[coefs$overlap==TRUE] <- "n"
 coefs$overlap[coefs$overlap==FALSE] <- "y"
 
@@ -1023,7 +1037,7 @@ labels<-rev(labels)
 cols<-c("#88b7c5","#a36666")
 
 p2 <- ggplot(coefs, aes(x=group, y=mean, color=model)) + scale_shape_manual(values=c(17,15,17,15)) + scale_alpha_manual(values=c(1,1,0.4,0.4)) +
-  geom_pointrange(aes(ymin=X10., ymax=X90.,shape=both,alpha=both)) + coord_flip()  + 
+  geom_pointrange(aes(ymin=X5., ymax=X95.,shape=both,alpha=both)) + coord_flip()  + 
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), axis.line = element_line(colour = "black")) + 
   geom_hline(yintercept = 0)  + xlab("") + ylab("") + theme(legend.position = "none") +
@@ -1578,3 +1592,136 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 ```
 
+
+# Sensitivity analyses with horticultural use
+
+
+## Full threat model (IUCN vetted species) - Horticultural use
+
+```{r frac_threatened_hort, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./vet_threatened_hort_10k.rds")) {
+
+  vet_threatened_hort <- brm(threatened | trials(vetted) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + hort.species + (1|family) + (1|family_name), 
+
+    # custom priors based on McElreath
+    prior = c(prior(normal(0, 1), class = Intercept),
+                prior(normal(0, 1.5), class = b),
+                prior(normal(0, 1), class = sd)),
+
+    dat=data_vetted, family=binomial(), 
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
+    control=list(adapt_delta=0.98,max_treedepth=13))
+
+  # no divergent transitions
+
+  saveRDS(vet_threatened_hort, "./vet_threatened_hort_10k.rds")
+
+} else { vet_threatened_hort <- readRDS("./vet_threatened_hort_10k.rds")}
+
+# prior_summary(vet_threatened_hort, all=FALSE)
+
+outcome <- summary(vet_threatened_hort$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+names1 <- c("Diversification rate (MOM)","Famly age", "Range size", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual","Horticultural species", "SD brownian effects","SD family specific effects")
+
+vet_threatened_hort_plot <- stanplot(vet_threatened_hort, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print))) + ggtitle("Proportion threatened species")
+
+vet_threatened_hort_plot
+
+pdf("./plots_tables/vet_threatened_hort_plot.pdf", width=5, height=4)
+vet_threatened_hort_plot + ggtitle("")
+dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/vet_threatened_hort.tex")
+
+##Posterior predictive checks
+# first make posterior predictions
+pp_threatened <- brms::posterior_predict(vet_threatened_hort)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=vet_threatened_hort$data$threatened, pp_threatened[1:50, ]) + scale_x_continuous(trans="log1p")
+
+# NRMSE
+nrmse_vet <- apply(pp_threatened, 1, function(x) nrmse(pred=x,obs=vet_threatened_hort$data$threatened, type="iq"))
+mean(nrmse_vet)
+sd(nrmse_vet)
+
+# RMSE
+rmse_vet <- apply(pp_threatened, 1, function(x) rmse(pred=x,obs=vet_threatened_hort$data$threatened))
+mean(rmse_vet)
+sd(rmse_vet)
+
+# family-level variance due to brownian motion component
+hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
+(hyp <- hypothesis(vet_threatened_hort, hyp, class = NULL))
+# plot(hyp)
+```
+
+
+
+## Naturalized model - horticultural species
+
+```{r frac_nat_hort, echo=TRUE, eval=TRUE}
+
+if (!file.exists("./fit_nat_hort_10k.rds")) {
+
+  fit_nat_hort <- brm(naturalized | trials(species) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + hort.species + (1|family) + (1|family_name), 
+    dat=data, family=binomial(), 
+    iter=10000, thin=4, cov_ranef = list(family = phy_cov),
+    control=list(adapt_delta=0.8, max_treedepth=11))
+
+  saveRDS(fit_nat_hort, "./fit_nat_hort_10k.rds")
+
+} else { fit_nat_hort <- readRDS("./fit_nat_hort_10k.rds")}
+
+outcome <- summary(fit_nat_hort$fit)
+to_print <- outcome$summary[grep("^[sd,b]_*",rownames(outcome$summary)),]
+to_print <- to_print[-1,]
+
+names1 <- c("Diversification rate (MOM)","Famly age", "Range size", "Hybrids","Animal pollinated", "Fleshy fruit", "Climate sum","Herbaceous","Annual","Axsexual", "Horticultural species", "SD brownian effects","SD family specific effects")
+
+fit_nat_hort_plot <- stanplot(fit_nat_hort, pars=rownames(to_print), type="intervals", 
+                    prob=0.8, prob_outer=0.95, point_est="mean") + scale_y_discrete(labels=rev(names1), limits=rev(rownames(to_print)))+ ggtitle("Proportion of naturalized species")
+
+fit_nat_hort_plot
+
+pdf("./plots_tables/fit_nat_hort_plot.pdf", width=5, height=4)
+fit_nat_hort_plot + ggtitle("")
+dev.off()
+
+rownames(to_print) <- names1
+kable(to_print, digits=2)
+to_print <- to_print[,c("mean","sd","2.5%","50%","97.5%","n_eff","Rhat")]
+print(xtable(to_print, type = "latex"), file = "./plots_tables/fit_nat_hort.tex")
+
+##Posterior predictive checks
+pp_nat <- brms::posterior_predict(fit_nat_hort)
+
+log1 <- scale_x_continuous(trans="log1p")
+
+ppc_dens_overlay(y=fit_nat_hort$data$naturalized, pp_nat[1:50, ]) + scale_x_continuous(trans="log1p")
+
+# NRMSE
+nrmse_nat <- apply(pp_nat, 1, function(x) nrmse(pred=x,obs=fit_nat_hort$data$naturalized, type="iq"))
+mean(nrmse_nat)
+sd(nrmse_nat)
+
+# RMSE
+rmse_nat <- apply(pp_nat, 1, function(x) rmse(pred=x,obs=fit_nat_hort$data$naturalized))
+mean(rmse_nat)
+sd(rmse_nat)
+
+# family-level variance due to brownian motion component
+hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_name__Intercept^2) = 0")
+(hyp <- hypothesis(fit_nat_hort, hyp, class = NULL))
+
+
+```
