@@ -183,7 +183,7 @@ nrow(data[data$vetted>0,])#317
 
 ```
 
-```{r raw_data_plot, echo=F, eval=T}
+```{r raw_data_plot, echo=F, eval=F}
 
 require(ggtree)
 
@@ -973,7 +973,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 
 
 
-```{r fig.width=6, fig.height=5, paper_forest_plots, eval=TRUE}
+```{r fig.width=6, fig.height=5, paper_forest_plots, eval=F}
 
 # simplified threat model
 outcome <- summary(vet_threatened_nat$fit, prob=c(0.05,0.95))
