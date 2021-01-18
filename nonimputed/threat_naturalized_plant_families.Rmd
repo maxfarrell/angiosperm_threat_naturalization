@@ -416,7 +416,7 @@ The brms prior is extremely long tailed. Considering we are fitting a non-linear
 if (!file.exists("./vet_threatened_naturalized_10k.rds")) {
 
   vet_threatened_nat <- brm(threatened | trials(vetted) ~ naturalized_scaled + diversification_scaled + age_scaled + range.size + (1|family) + (1|family_name), 
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
 
@@ -534,7 +534,7 @@ ggsave("./plots_tables/prior_post_simple_sigma_brms.pdf", prior_post_1_sigma , h
 if (!file.exists("./vet_threatened_naturalized_p2_10k.rds")) {
 
   vet_threatened_nat_p2 <- brm(threatened | trials(vetted) ~ naturalized_scaled + diversification_scaled + age_scaled + range.size + (1|family) + (1|family_name), 
-    dat=data_vetted, family=binomial(),
+    data=data_vetted, family=binomial(),
 
     # custom priors based on McElreath
     prior = c(prior(normal(0, 1), class = Intercept),
@@ -663,7 +663,7 @@ if (!file.exists("./vet_threatened_10k.rds")) {
 
 
   vet_threatened <- brm(threatened | trials(vetted) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.98,max_treedepth=13))
     # no divergent transitions
@@ -788,7 +788,7 @@ if (!file.exists("./vet_threatened_p2_10k.rds")) {
                 prior(normal(0, 1.5), class = b),
                 prior(normal(0, 1), class = sd)),
 
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.98,max_treedepth=13))
 
@@ -907,7 +907,7 @@ ggsave("./plots_tables/prior_post_full_sigma_custom.pdf", prior_post_4_sigma , h
 if (!file.exists("./fit_nat_10k.rds")) {
 
   fit_nat <- brm(naturalized | trials(species) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
+    data=data, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.95, max_treedepth=11))
 
@@ -1160,13 +1160,7 @@ dev.off()
 if (!file.exists("./vet_threatened_naturalized_norange_10k.rds")) {
 
   vet_threatened_nat_norange <- brm(threatened | trials(vetted) ~ naturalized_scaled + diversification_scaled + age_scaled + (1|family) + (1|family_name), 
-    dat=data_vetted, family=binomial(),
-
-    # custom priors based on McElreath
-    prior = c(prior(normal(0, 1), class = Intercept),
-                prior(normal(0, 1.5), class = b),
-                prior(normal(0, 1), class = sd)),
-
+    data=data_vetted, family=binomial(),
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.95,max_treedepth=12), cores=4)
 
@@ -1230,7 +1224,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 if (!file.exists("./vet_threatened_nofam_10k.rds")) {
 
   vet_threatened_nofam <- brm(threatened | trials(vetted) ~ diversification_scaled + age_scaled + range.size +  hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual, 
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4,
     control=list(adapt_delta=0.95,max_treedepth=13))
 
@@ -1287,7 +1281,7 @@ sd(rmse_threatened_nofam)
 if (!file.exists("./vet_threatened_nophylo_10k.rds")) {
 
   vet_threatened_nophylo <- brm(threatened | trials(vetted) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family_name), 
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4,
     control=list(adapt_delta=0.95,max_treedepth=13))
 
@@ -1343,7 +1337,7 @@ sd(rmse_threatened_nophylo)
 if (!file.exists("./vet_threatened_phylo_10k.rds")) {
 
   vet_threatened_phylo <- brm(threatened | trials(vetted) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual+ (1|family), 
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.95,max_treedepth=13))
 
@@ -1399,9 +1393,9 @@ sd(rmse_threatened_phylo)
 if (!file.exists("./nonvet_threatened_10k.rds")) {
 
   nonvet_threatened <- brm(threatened | trials(species) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
+    data=data, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.95,max_treedepth=13))
+    control=list(adapt_delta=0.99,max_treedepth=13))
 
   saveRDS(nonvet_threatened, "./nonvet_threatened_10k.rds")
 
@@ -1462,13 +1456,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 if (!file.exists("./vet_threatened_MOM_10k.rds")) {
 
   vet_threatened_MOM <- brm(threatened | trials(vetted) ~ diversification_mom_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
-
-    # custom priors based on McElreath
-    prior = c(prior(normal(0, 1), class = Intercept),
-                prior(normal(0, 1.5), class = b),
-                prior(normal(0, 1), class = sd)),
-
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.98,max_treedepth=13))
 
@@ -1533,9 +1521,9 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 if (!file.exists("./fit_nat_MOM_10k.rds")) {
 
   fit_nat_MOM <- brm(naturalized | trials(species) ~ diversification_mom_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
+    data=data, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
-    control=list(adapt_delta=0.8, max_treedepth=11))
+    control=list(adapt_delta=0.95, max_treedepth=11))
 
   saveRDS(fit_nat_MOM, "./fit_nat_MOM_10k.rds")
 
@@ -1597,12 +1585,7 @@ if (!file.exists("./vet_threatened_hort_10k.rds")) {
 
   vet_threatened_hort <- brm(threatened | trials(vetted) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + hort.species + (1|family) + (1|family_name), 
 
-    # custom priors based on McElreath
-    prior = c(prior(normal(0, 1), class = Intercept),
-                prior(normal(0, 1.5), class = b),
-                prior(normal(0, 1), class = sd)),
-
-    dat=data_vetted, family=binomial(), 
+    data=data_vetted, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov_vetted),
     control=list(adapt_delta=0.98,max_treedepth=13))
 
@@ -1667,7 +1650,7 @@ hyp <- paste("sd_family__Intercept^2 /", "(sd_family__Intercept^2 + sd_family_na
 if (!file.exists("./fit_nat_hort_10k.rds")) {
 
   fit_nat_hort <- brm(naturalized | trials(species) ~ diversification_scaled + age_scaled + range.size + hybrids + animal + fleshy.fruit + climate.sum + herbaceous + annual + asexual + hort.species + (1|family) + (1|family_name), 
-    dat=data, family=binomial(), 
+    data=data, family=binomial(), 
     iter=10000, thin=4, cov_ranef = list(family = phy_cov),
     control=list(adapt_delta=0.8, max_treedepth=11))
 
