@@ -1140,58 +1140,6 @@ plotTree.wBars(tree_small,x=fam_effects,type="fan",scale=20, width=3.75, col=col
 
 dev.off()
 
-
-
-# Exploring the reltaionship between family effects and clade age in the threatened model
-
-# Extract species level effects
-ranef_phy <- ranef(vet_threatened)$family
-ranef_binom <- ranef(vet_threatened)$family_name
-ranef_spec <- ranef_phy + ranef_binom
-
-ranef_phy <- as.data.frame(unlist(ranef_phy))
-ranef_binom <- as.data.frame(unlist(ranef_binom))
-ranef_spec <- as.data.frame(unlist(ranef_spec))
-
-ranef_phy$family <- rownames(ranef_phy)
-
-dat <- left_join(data_vetted, ranef_phy)
-names(dat)[30:33] <- paste0("phy",names(dat)[30:33])
-
-ranef_binom$family <- rownames(ranef_binom)
-dat <- left_join(dat, ranef_binom)
-names(dat)
-
-with(dat, plot(Estimate.Intercept ~ phyEstimate.Intercept, pch=20, cex=diversification_scaled))
-abline(0,1)
-
-
-
-par(mfrow=c(1,1))
-with(dat, plot(age, Estimate.Intercept, pch=20, col="red"))
-with(dat, plot(age_scaled, Estimate.Intercept, pch=20, col="red"))
-
-
-
-
-
-
-
-
-par(mfrow=c(2,1))
-with(data_vetted[data_vetted$threatened>=0,], plot(age, threatened/vetted, pch=20, cex=log10(vetted), col="red", ylim=c(0,1)))
-
-with(data[data$naturalized>=0,], plot(age, naturalized/species, pch=20, cex=log10(species),col="blue", ylim=c(0,1)))
-
-with(data)
-
-
-with(dat, plot(age, naturalized/species, pch=20, col="blue", ylim=c(0.2,1)))
-
-
-
-
-
 ```
 
 
